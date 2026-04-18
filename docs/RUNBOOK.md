@@ -29,6 +29,20 @@ For local shell testing:
 4. Watch logs and events in bottom panel.
 5. Inspect generated artifacts under .axiom/.
 
+## 6. Multi-format model inspection
+
+Inspection workflow now scans project files and reports metadata for multiple model families, including ONNX, PyTorch archives, safetensors, GGUF, TFLite, Keras HDF5, CoreML packaging, and common weight containers.
+
+Generated artifacts:
+
+- .axiom/artifacts/inspection-<run-id>.json
+- .axiom/artifacts/inspection-<run-id>.md
+
+Notes:
+
+- If ONNX or HDF5 parser dependencies are unavailable, inspection still completes with file-level metadata and warnings.
+- Pickle/joblib payloads are intentionally not deserialized for safety.
+
 ## 5. Integrated terminal
 
 1. Open a project folder to auto-create a terminal session.
