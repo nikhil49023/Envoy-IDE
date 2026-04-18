@@ -8,6 +8,7 @@
 4. Workflow engine: Python domain workflows for dataset, evaluation, export, simulation, and inspection.
 5. Insight panels: inspector and bottom log panel, with room for metrics/artifact dashboards.
 6. Assistant layer: constrained guidance surface bound to context and run artifacts.
+7. Center work modes: script production mode, notebook exploration mode, and workflow lifecycle mode.
 
 ## Event Model
 
@@ -23,6 +24,8 @@ Runtime and workflow processes emit JSON event objects:
 - process_error
 
 These events are pushed from Electron main to renderer via the envoy:runtime-event IPC channel.
+
+Inline notebook/script execution uses a dedicated envoy:execute-python IPC entrypoint, which returns structured outputs including stdout/stderr, variable summaries, dataframe previews, plot images, and HTML/widget-like rich output.
 
 ## Local Project State
 

@@ -11,12 +11,15 @@ import type { QuickOpenItem } from "./layout/QuickOpenPalette";
 import { InspectorPanel } from "./panels/InspectorPanel";
 import { TerminalPanel } from "./terminal/TerminalPanel";
 import { XtermViewport } from "./terminal/XtermViewport";
+import { NotebookWorkspace } from "./workbench/NotebookWorkspace";
+import { WorkflowWorkspace } from "./workbench/WorkflowWorkspace";
 
 type ActivityView = "explorer" | "workflows";
 type BottomView = "terminal" | "events";
 type ThemePreset = "aurora" | "graphite" | "ember";
 type LayoutPreset = "balanced" | "focus" | "analysis" | "wide";
 type DragTarget = "left" | "right" | "bottom";
+type CenterMode = "notebook" | "script" | "workflow";
 
 type DragState = {
   target: DragTarget;
@@ -30,6 +33,27 @@ type DragState = {
 type TerminalChunk = {
   seq: number;
   data: string;
+};
+
+type PythonExecutionResult = {
+  stdout: string;
+  stderr: string;
+  error: string | null;
+  variables: Array<{ name: string; type: string; preview: string; shape?: string; dtype?: string }>;
+  dataframes: Array<{
+    name: string;
+    columns: string[];
+    rows: Array<Record<string, unknown>>;
+    row_count: number;
+  }>;
+  plots: string[];
+  html_outputs: string[];
+};
+
+type ScriptCell = {
+  index: number;
+  title: string;
+  code: string;
 };
 
 const STORAGE_THEME_KEY = "envoy-ui-theme";
@@ -88,6 +112,54 @@ function nextThemePreset(theme: ThemePreset): ThemePreset {
   return "aurora";
 }
 
+function inferModeFromPath(filePath: string | null): CenterMode {
+  if (!filePath) {
+    return "script";
+  }
+
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith(".ipynb")) {
+    return "notebook";
+  }
+  return "script";
+}
+
+function parseScriptCells(source: string): ScriptCell[] {
+  const lines = source.split("\n");
+  const markerIndexes: number[] = [];
+
+  lines.forEach((line, index) => {
+    if (line.trim().startsWith("# %%")) {
+      markerIndexes.push(index);
+    }
+  });
+
+  if (markerIndexes.length === 0) {
+    return [
+      {
+        index: 1,
+        title: "Cell 1",
+        code: source,
+      },
+    ];
+  }
+
+  const cells: ScriptCell[] = [];
+  markerIndexes.forEach((startIndex, markerPosition) => {
+    const endIndex = markerIndexes[markerPosition + 1] ?? lines.length;
+    const markerLine = lines[startIndex]?.trim() ?? "# %%";
+    const title = markerLine.replace("# %%", "").trim() || `Cell ${markerPosition + 1}`;
+    const code = lines.slice(startIndex + 1, endIndex).join("\n");
+    cells.push({
+      index: markerPosition + 1,
+      title,
+      code,
+    });
+  });
+
+  return cells;
+}
+
 export function App() {
   const [projectRoot, setProjectRoot] = useState<string | null>(null);
   const [tree, setTree] = useState<FileNode[]>([]);
@@ -107,6 +179,8 @@ export function App() {
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const [activityView, setActivityView] = useState<ActivityView>("explorer");
   const [bottomView, setBottomView] = useState<BottomView>("terminal");
+  const [centerMode, setCenterMode] = useState<CenterMode>("script");
+  const [latestExecution, setLatestExecution] = useState<PythonExecutionResult | null>(null);
   const [theme, setTheme] = useState<ThemePreset>(() => {
     const stored = window.localStorage.getItem(STORAGE_THEME_KEY);
     if (stored === "graphite" || stored === "ember" || stored === "aurora") {
@@ -260,9 +334,26 @@ export function App() {
     };
   }, [dragState]);
 
+  useEffect(() => {
+    if (centerMode === "workflow") {
+      return;
+    }
+    setCenterMode(inferModeFromPath(activePath));
+  }, [activePath]);
+
   const openTabs = useMemo(
     () => tabOrder.map((path) => tabs[path]).filter((tab): tab is OpenTab => Boolean(tab)),
     [tabOrder, tabs],
+  );
+  const activeTab = useMemo(() => {
+    if (!activePath) {
+      return null;
+    }
+    return tabs[activePath] ?? null;
+  }, [activePath, tabs]);
+  const scriptCells = useMemo(
+    () => parseScriptCells(activeTab?.content ?? ""),
+    [activeTab?.content],
   );
   const allProjectFiles = useMemo(() => collectFilePaths(tree), [tree]);
   const filePathSet = useMemo(() => new Set(allProjectFiles), [allProjectFiles]);
@@ -334,6 +425,26 @@ export function App() {
         id: "action:cycle-layout",
         kind: "action",
         label: "Cycle Layout Preset",
+      },
+      {
+        id: "action:mode-notebook",
+        kind: "action",
+        label: "Switch to Notebook Mode",
+      },
+      {
+        id: "action:mode-script",
+        kind: "action",
+        label: "Switch to Script Mode",
+      },
+      {
+        id: "action:mode-workflow",
+        kind: "action",
+        label: "Switch to Workflow Mode",
+      },
+      {
+        id: "action:run-tests",
+        kind: "action",
+        label: "Run Python Tests",
       },
     ];
 
@@ -512,6 +623,42 @@ export function App() {
     setRuntimeLogs((prev) => [...prev.slice(-300), `Command started: ${commandInput} (${runId})`]);
   }
 
+  async function runProjectCommand(rawCommand: string) {
+    if (!projectRoot) {
+      setRuntimeLogs((prev) => [...prev.slice(-300), "Open a project first."]);
+      return;
+    }
+
+    const parts = rawCommand.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) {
+      return;
+    }
+
+    const runId = await window.envoy.runCommand(projectRoot, parts[0], parts.slice(1));
+    setLatestRunId(runId);
+    setRuntimeLogs((prev) => [...prev.slice(-300), `Command started: ${rawCommand} (${runId})`]);
+  }
+
+  async function executePythonSnippet(code: string): Promise<PythonExecutionResult | null> {
+    if (!projectRoot) {
+      setRuntimeLogs((prev) => [...prev.slice(-300), "Open a project first."]);
+      return null;
+    }
+
+    const result = await window.envoy.executePython(projectRoot, code);
+    setLatestExecution(result);
+
+    if (result.error) {
+      setRuntimeLogs((prev) => [...prev.slice(-300), `Python execution error: ${result.error}`]);
+    } else {
+      const vars = result.variables.length;
+      const frames = result.dataframes.length;
+      setRuntimeLogs((prev) => [...prev.slice(-300), `Python execution completed (${vars} vars, ${frames} dataframes).`]);
+    }
+
+    return result;
+  }
+
   const sendTerminalInput = useCallback(async (data: string) => {
     if (!terminalId) {
       setTerminalLogs((prev) => [...prev.slice(-600), "Terminal is not initialized."]);
@@ -609,6 +756,18 @@ export function App() {
           }
           return "balanced";
         });
+        break;
+      case "action:mode-notebook":
+        setCenterMode("notebook");
+        break;
+      case "action:mode-script":
+        setCenterMode("script");
+        break;
+      case "action:mode-workflow":
+        setCenterMode("workflow");
+        break;
+      case "action:run-tests":
+        void runProjectCommand("python3 -m pytest -q");
         break;
       default:
         break;
@@ -724,16 +883,104 @@ export function App() {
         />
 
         <main className="center-pane" style={centerLayoutStyle}>
-          <EditorPane
-            tabs={openTabs}
-            activePath={activePath}
-            onActivateTab={setActivePath}
-            onCloseTab={closeTab}
-            onSave={() => {
-              void saveActiveFile();
-            }}
-            onChange={handleEditorChange}
-          />
+          <section className="panel center-mode-panel glass-panel">
+            <div className="center-mode-tabs">
+              <button
+                className={centerMode === "notebook" ? "active" : ""}
+                onClick={() => setCenterMode("notebook")}
+              >
+                Notebook
+              </button>
+              <button
+                className={centerMode === "script" ? "active" : ""}
+                onClick={() => setCenterMode("script")}
+              >
+                Script
+              </button>
+              <button
+                className={centerMode === "workflow" ? "active" : ""}
+                onClick={() => setCenterMode("workflow")}
+              >
+                Workflow
+              </button>
+            </div>
+
+            {centerMode === "workflow" ? (
+              <WorkflowWorkspace onRunWorkflow={runWorkflow} />
+            ) : null}
+
+            {centerMode === "notebook" ? (
+              <NotebookWorkspace
+                tab={activeTab}
+                onNotebookChange={handleEditorChange}
+                onSave={() => {
+                  void saveActiveFile();
+                }}
+                onExecuteCode={executePythonSnippet}
+              />
+            ) : null}
+
+            {centerMode === "script" ? (
+              <div className="script-workspace-stack">
+                <EditorPane
+                  tabs={openTabs}
+                  activePath={activePath}
+                  onActivateTab={setActivePath}
+                  onCloseTab={closeTab}
+                  onSave={() => {
+                    void saveActiveFile();
+                  }}
+                  onChange={handleEditorChange}
+                />
+
+                <section className="panel script-cells-panel glass-panel">
+                  <div className="workspace-heading-row">
+                    <div>
+                      <h3 className="panel-title">Script Productivity</h3>
+                      <p className="workspace-subtitle">
+                        IntelliSense active in Monaco. Use # %% for cell-based execution in .py files.
+                      </p>
+                    </div>
+                    <div className="workspace-actions">
+                      <button
+                        onClick={() => {
+                          if (activeTab) {
+                            void executePythonSnippet(activeTab.content);
+                          }
+                        }}
+                        disabled={!activeTab}
+                      >
+                        Run File
+                      </button>
+                      <button onClick={() => void runProjectCommand("python3 -m pytest -q")}>Run Tests</button>
+                      <button
+                        onClick={() => {
+                          if (activePath) {
+                            void runProjectCommand(`python3 -m pdb ${activePath}`);
+                          }
+                        }}
+                        disabled={!activePath}
+                      >
+                        Debug
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="script-cell-list">
+                    {scriptCells.map((cell) => (
+                      <article key={`script-cell-${cell.index}`} className="script-cell-card">
+                        <h4>
+                          Cell {cell.index}: {cell.title}
+                        </h4>
+                        <pre>{cell.code.trim() || "(empty cell)"}</pre>
+                        <button onClick={() => void executePythonSnippet(cell.code)}>Run Cell</button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            ) : null}
+          </section>
 
           <div
             className="pane-splitter horizontal"
@@ -782,6 +1029,8 @@ export function App() {
           projectRoot={projectRoot}
           activeFilePath={activePath}
           latestRunId={latestRunId}
+          variables={latestExecution?.variables ?? []}
+          dataframes={latestExecution?.dataframes ?? []}
         />
       </div>
 

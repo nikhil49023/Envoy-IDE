@@ -1,5 +1,20 @@
 import type { FileNode } from "@core-types/index";
 
+type PythonExecutionResult = {
+  stdout: string;
+  stderr: string;
+  error: string | null;
+  variables: Array<{ name: string; type: string; preview: string; shape?: string; dtype?: string }>;
+  dataframes: Array<{
+    name: string;
+    columns: string[];
+    rows: Array<Record<string, unknown>>;
+    row_count: number;
+  }>;
+  plots: string[];
+  html_outputs: string[];
+};
+
 declare global {
   interface Window {
     envoy: {
@@ -13,6 +28,7 @@ declare global {
         workflow: string,
         config: Record<string, unknown>,
       ) => Promise<string>;
+      executePython: (projectRoot: string, code: string) => Promise<PythonExecutionResult>;
       stopRun: (runId: string) => Promise<boolean>;
       createTerminal: (projectRoot: string) => Promise<string>;
       writeTerminal: (terminalId: string, data: string) => Promise<boolean>;

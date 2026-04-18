@@ -29,6 +29,17 @@ For local shell testing:
 4. Watch logs and events in bottom panel.
 5. Inspect generated artifacts under .axiom/.
 
+Center workspace modes:
+
+- Notebook mode: open .ipynb files with markdown/code cells, inline outputs, plots, and rich HTML/widget-like rendering.
+- Script mode: production-focused editor with script cell execution from # %% markers, test and debug command hooks.
+- Workflow mode: lifecycle dashboard for data, experiments, training, models, deployment, and monitoring.
+
+Inspector enhancements:
+
+- Variable explorer populated from notebook/script cell execution.
+- Dataframe/data viewer with quick filtering and table preview.
+
 ## 6. Multi-format model inspection
 
 Inspection workflow now scans project files and reports metadata for multiple model families, including ONNX, PyTorch archives, safetensors, GGUF, TFLite, Keras HDF5, CoreML packaging, and common weight containers.

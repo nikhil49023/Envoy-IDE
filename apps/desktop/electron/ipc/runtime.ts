@@ -28,6 +28,31 @@ type TerminalSession = {
 
 const terminalSessions = new Map<string, TerminalSession>();
 
+type PythonVariableSummary = {
+  name: string;
+  type: string;
+  preview: string;
+  shape?: string;
+  dtype?: string;
+};
+
+type DataFramePreview = {
+  name: string;
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  row_count: number;
+};
+
+type PythonExecutionResult = {
+  stdout: string;
+  stderr: string;
+  error: string | null;
+  variables: PythonVariableSummary[];
+  dataframes: DataFramePreview[];
+  plots: string[];
+  html_outputs: string[];
+};
+
 const require = createRequire(import.meta.url);
 
 function getNodePty(): null | {
@@ -173,6 +198,190 @@ function startStreamingProcess(
       timestamp: new Date().toISOString(),
     });
     activeRuns.delete(runId);
+  });
+}
+
+function runPythonSnippet(projectRoot: string, code: string): Promise<PythonExecutionResult> {
+  return new Promise((resolve) => {
+    const encoded = Buffer.from(code, "utf-8").toString("base64");
+    const wrapper = String.raw`
+import base64
+import contextlib
+import io
+import json
+import traceback
+import types
+
+result = {
+    "stdout": "",
+    "stderr": "",
+    "error": None,
+    "variables": [],
+    "dataframes": [],
+    "plots": [],
+    "html_outputs": [],
+}
+
+code = base64.b64decode("${encoded}").decode("utf-8")
+scope = {}
+std_out = io.StringIO()
+std_err = io.StringIO()
+
+try:
+    with contextlib.redirect_stdout(std_out), contextlib.redirect_stderr(std_err):
+        exec(code, scope, scope)
+except Exception:
+    result["error"] = traceback.format_exc()
+
+result["stdout"] = std_out.getvalue()
+result["stderr"] = std_err.getvalue()
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
+
+for name, value in list(scope.items()):
+    if name.startswith("_"):
+        continue
+    if isinstance(value, (types.ModuleType, types.FunctionType, type)):
+        continue
+
+    summary = {
+        "name": name,
+        "type": type(value).__name__,
+        "preview": repr(value)[:180],
+    }
+
+    if hasattr(value, "shape"):
+        try:
+            summary["shape"] = str(getattr(value, "shape"))
+        except Exception:
+            pass
+    if hasattr(value, "dtype"):
+        try:
+            summary["dtype"] = str(getattr(value, "dtype"))
+        except Exception:
+            pass
+
+    result["variables"].append(summary)
+
+    if pd is not None:
+        try:
+            if isinstance(value, pd.DataFrame):
+                head = value.head(30)
+                rows = head.to_dict(orient="records")
+                result["dataframes"].append(
+                    {
+                        "name": name,
+                        "columns": [str(col) for col in head.columns.tolist()],
+                        "rows": rows,
+                        "row_count": int(len(value)),
+                    }
+                )
+        except Exception:
+            pass
+
+    if hasattr(value, "_repr_html_"):
+        try:
+            html = value._repr_html_()
+            if isinstance(html, str) and html.strip():
+                result["html_outputs"].append(html)
+        except Exception:
+            pass
+
+try:
+    import matplotlib.pyplot as plt
+    import base64 as _base64
+    import io as _io
+
+    for fig_id in plt.get_fignums():
+        fig = plt.figure(fig_id)
+        buffer = _io.BytesIO()
+        fig.savefig(buffer, format="png", bbox_inches="tight")
+        buffer.seek(0)
+        result["plots"].append(_base64.b64encode(buffer.read()).decode("ascii"))
+        buffer.close()
+    plt.close("all")
+except Exception:
+    pass
+
+print(json.dumps(result))
+`;
+
+    const child = spawn(process.env.PYTHON_BIN ?? "python3", ["-c", wrapper], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        PYTHONPATH: pythonPathEnv(),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let out = "";
+    let err = "";
+    let settled = false;
+
+    const settle = (payload: PythonExecutionResult) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(payload);
+    };
+
+    const timeout = setTimeout(() => {
+      child.kill("SIGTERM");
+      settle({
+        stdout: out,
+        stderr: err,
+        error: "Execution timed out after 30 seconds.",
+        variables: [],
+        dataframes: [],
+        plots: [],
+        html_outputs: [],
+      });
+    }, 30_000);
+
+    child.stdout.on("data", (chunk) => {
+      out += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      err += chunk.toString();
+    });
+
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      settle({
+        stdout: out,
+        stderr: err,
+        error: error.message,
+        variables: [],
+        dataframes: [],
+        plots: [],
+        html_outputs: [],
+      });
+    });
+
+    child.on("close", () => {
+      clearTimeout(timeout);
+      const trimmed = out.trim();
+      try {
+        const parsed = JSON.parse(trimmed) as PythonExecutionResult;
+        settle(parsed);
+      } catch {
+        settle({
+          stdout: out,
+          stderr: err,
+          error: err || "Failed to parse execution output.",
+          variables: [],
+          dataframes: [],
+          plots: [],
+          html_outputs: [],
+        });
+      }
+    });
   });
 }
 
@@ -334,6 +543,13 @@ export function registerRuntimeIpc(window: BrowserWindow) {
     activeRuns.delete(runId);
     return true;
   });
+
+  ipcMain.handle(
+    "envoy:execute-python",
+    async (_event, projectRoot: string, code: string) => {
+      return runPythonSnippet(projectRoot, code);
+    },
+  );
 
   ipcMain.handle("envoy:terminal-create", async (_event, projectRoot: string) => {
     const terminalId = randomUUID();

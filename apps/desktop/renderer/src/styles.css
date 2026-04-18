@@ -310,6 +310,274 @@ select {
   color: var(--text-soft);
 }
 
+.workspace-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.workspace-subtitle {
+  margin: 2px 0 0 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.workspace-actions button {
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
+  background: linear-gradient(180deg, rgba(61, 87, 114, 0.42), rgba(31, 49, 70, 0.36));
+  border-radius: 9px;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+
+.center-mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.center-mode-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.center-mode-tabs button {
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
+  background: linear-gradient(180deg, rgba(61, 87, 114, 0.42), rgba(31, 49, 70, 0.36));
+  border-radius: 9px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.center-mode-tabs button.active {
+  border-color: rgba(111, 216, 229, 0.52);
+  color: #f1fcff;
+  background: linear-gradient(180deg, rgba(76, 158, 176, 0.44), rgba(36, 90, 109, 0.45));
+}
+
+.script-workspace-stack {
+  display: grid;
+  grid-template-rows: minmax(280px, 1fr) minmax(190px, 32%);
+  min-height: 0;
+  gap: 10px;
+}
+
+.script-cells-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.script-cell-list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  overflow: auto;
+}
+
+.script-cell-card {
+  border: 1px solid rgba(140, 170, 201, 0.18);
+  border-radius: 10px;
+  background: rgba(13, 21, 31, 0.4);
+  padding: 8px;
+}
+
+.script-cell-card h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.script-cell-card pre {
+  margin: 0 0 8px 0;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text-soft);
+  background: rgba(6, 11, 18, 0.85);
+  max-height: 96px;
+  overflow: auto;
+}
+
+.script-cell-card button {
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
+  background: linear-gradient(180deg, rgba(61, 87, 114, 0.42), rgba(31, 49, 70, 0.36));
+  border-radius: 8px;
+  padding: 6px 9px;
+  cursor: pointer;
+}
+
+.notebook-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.notebook-cells {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+
+.notebook-cell {
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 10px;
+  background: rgba(12, 20, 30, 0.45);
+  padding: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.notebook-cell-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+.notebook-cell-toolbar div {
+  display: flex;
+  gap: 6px;
+}
+
+.notebook-cell-toolbar button {
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
+  background: linear-gradient(180deg, rgba(61, 87, 114, 0.42), rgba(31, 49, 70, 0.36));
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.notebook-editor {
+  width: 100%;
+  min-height: 86px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(8, 14, 22, 0.68);
+  color: var(--text-main);
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.notebook-editor.code {
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-size: 12px;
+}
+
+.notebook-output {
+  display: grid;
+  gap: 6px;
+}
+
+.notebook-text-output {
+  margin: 0;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  background: rgba(8, 14, 22, 0.78);
+  color: #b4ffd7;
+  overflow: auto;
+}
+
+.notebook-text-output.error {
+  color: #ffc3bc;
+  border: 1px solid rgba(240, 113, 103, 0.4);
+}
+
+.notebook-image {
+  max-width: 100%;
+  border: 1px solid rgba(92, 124, 161, 0.28);
+  border-radius: 8px;
+  background: rgba(4, 8, 12, 0.92);
+}
+
+.notebook-html-output {
+  border: 1px solid rgba(92, 124, 161, 0.28);
+  border-radius: 8px;
+  background: rgba(8, 14, 22, 0.72);
+  padding: 8px;
+  overflow: auto;
+}
+
+.workflow-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 10px;
+}
+
+.platform-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.platform-card {
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 10px;
+  background: rgba(12, 20, 30, 0.45);
+  padding: 8px;
+}
+
+.platform-card h4 {
+  margin: 0 0 5px 0;
+  font-size: 12px;
+}
+
+.platform-card p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-soft);
+  line-height: 1.4;
+}
+
+.workflow-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workflow-module-card {
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 10px;
+  background: rgba(12, 20, 30, 0.45);
+  padding: 8px;
+}
+
+.workflow-module-card h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+}
+
+.workflow-module-card ul {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.workflow-module-card p {
+  margin: 8px 0 0 0;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
 .explorer-panel {
   height: 100%;
   overflow: auto;
@@ -773,6 +1041,53 @@ select {
   word-break: break-word;
 }
 
+.inspector-meta {
+  margin: 0 0 6px 0;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.inspector-filter {
+  width: 100%;
+  border: 1px solid var(--line-soft);
+  background: rgba(8, 14, 22, 0.62);
+  color: var(--text-main);
+  border-radius: 9px;
+  padding: 6px 9px;
+  margin-bottom: 6px;
+}
+
+.inspector-empty {
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.variable-table-wrap,
+.dataframe-table-wrap {
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 8px;
+}
+
+.variable-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.variable-table th,
+.variable-table td {
+  text-align: left;
+  border-bottom: 1px solid rgba(140, 170, 201, 0.14);
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+.variable-table th {
+  color: var(--text-soft);
+}
+
 .status-bar {
   border-radius: 10px;
   display: grid;
@@ -932,6 +1247,10 @@ select {
   .ghost-button {
     order: 2;
     justify-self: end;
+  }
+
+  .workflow-bottom-grid {
+    grid-template-columns: 1fr;
   }
 }
 

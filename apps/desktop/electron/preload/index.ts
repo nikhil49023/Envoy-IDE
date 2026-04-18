@@ -13,6 +13,21 @@ type TerminalEventPayload = {
   code?: number;
 };
 
+type PythonExecutionResult = {
+  stdout: string;
+  stderr: string;
+  error: string | null;
+  variables: Array<{ name: string; type: string; preview: string; shape?: string; dtype?: string }>;
+  dataframes: Array<{
+    name: string;
+    columns: string[];
+    rows: Array<Record<string, unknown>>;
+    row_count: number;
+  }>;
+  plots: string[];
+  html_outputs: string[];
+};
+
 const api = {
   openFolder: (): Promise<string | null> => ipcRenderer.invoke("envoy:open-folder"),
   listTree: (rootPath: string): Promise<unknown> => ipcRenderer.invoke("envoy:list-tree", rootPath),
@@ -23,6 +38,8 @@ const api = {
     ipcRenderer.invoke("envoy:run-command", projectRoot, command, args),
   runWorkflow: (projectRoot: string, workflow: string, config: Record<string, unknown>) =>
     ipcRenderer.invoke("envoy:run-workflow", projectRoot, workflow, config),
+  executePython: (projectRoot: string, code: string): Promise<PythonExecutionResult> =>
+    ipcRenderer.invoke("envoy:execute-python", projectRoot, code),
   stopRun: (runId: string) => ipcRenderer.invoke("envoy:stop-run", runId),
   createTerminal: (projectRoot: string) => ipcRenderer.invoke("envoy:terminal-create", projectRoot),
   writeTerminal: (terminalId: string, data: string) =>
