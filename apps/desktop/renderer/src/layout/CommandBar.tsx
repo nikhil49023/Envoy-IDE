@@ -5,6 +5,8 @@ type CommandBarProps = {
   commandInput: string;
   setCommandInput: (value: string) => void;
   projectRoot: string | null;
+  theme: string;
+  setTheme: (value: string) => void;
 };
 
 export function CommandBar({
@@ -14,6 +16,8 @@ export function CommandBar({
   commandInput,
   setCommandInput,
   projectRoot,
+  theme,
+  setTheme,
 }: CommandBarProps) {
   const projectName = projectRoot?.split(/[\\/]/).filter(Boolean).pop() ?? "No project open";
 
@@ -40,6 +44,20 @@ export function CommandBar({
         />
         <button onClick={onRunCommand}>Run</button>
       </div>
+
+      <label className="theme-select-wrap" htmlFor="theme-select">
+        Theme
+        <select
+          id="theme-select"
+          className="theme-select"
+          value={theme}
+          onChange={(event) => setTheme(event.target.value)}
+        >
+          <option value="aurora">Aurora Glass</option>
+          <option value="graphite">Graphite Mist</option>
+          <option value="ember">Ember Lux</option>
+        </select>
+      </label>
 
       <button className="ghost-button" onClick={onOpenFolder}>
         Open Project

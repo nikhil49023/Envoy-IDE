@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 
 import type { FileNode, OpenTab } from "@core-types/index";
 
@@ -7,9 +8,28 @@ import { FileExplorer } from "./explorer/FileExplorer";
 import { CommandBar } from "./layout/CommandBar";
 import { InspectorPanel } from "./panels/InspectorPanel";
 import { TerminalPanel } from "./terminal/TerminalPanel";
+import { XtermViewport } from "./terminal/XtermViewport";
 
 type ActivityView = "explorer" | "workflows";
 type BottomView = "terminal" | "events";
+type ThemePreset = "aurora" | "graphite" | "ember";
+type DragTarget = "left" | "right" | "bottom";
+
+type DragState = {
+  target: DragTarget;
+  startX: number;
+  startY: number;
+  startLeft: number;
+  startRight: number;
+  startBottom: number;
+};
+
+type TerminalChunk = {
+  seq: number;
+  data: string;
+};
+
+const STORAGE_THEME_KEY = "envoy-ui-theme";
 
 const WORKFLOW_OPTIONS = [
   { id: "evaluation", label: "Evaluation" },
@@ -31,12 +51,28 @@ export function App() {
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
     "Terminal is idle. Open a project to start an interactive shell.",
   ]);
+  const [latestTerminalChunk, setLatestTerminalChunk] = useState<TerminalChunk>({ seq: 0, data: "" });
   const [latestRunId, setLatestRunId] = useState<string | null>(null);
   const [commandInput, setCommandInput] = useState("python3 -V");
   const [terminalId, setTerminalId] = useState<string | null>(null);
-  const [terminalInput, setTerminalInput] = useState("");
   const [activityView, setActivityView] = useState<ActivityView>("explorer");
   const [bottomView, setBottomView] = useState<BottomView>("terminal");
+  const [theme, setTheme] = useState<ThemePreset>(() => {
+    const stored = window.localStorage.getItem(STORAGE_THEME_KEY);
+    if (stored === "graphite" || stored === "ember" || stored === "aurora") {
+      return stored;
+    }
+    return "aurora";
+  });
+  const [leftPaneWidth, setLeftPaneWidth] = useState(280);
+  const [rightPaneWidth, setRightPaneWidth] = useState(300);
+  const [bottomPaneHeight, setBottomPaneHeight] = useState(270);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(STORAGE_THEME_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     const disposeRuntime = window.envoy.onRuntimeEvent((payload) => {
@@ -60,6 +96,9 @@ export function App() {
       }
 
       if (payload.type === "data") {
+        const chunk = payload.data ?? "";
+        setLatestTerminalChunk((prev) => ({ seq: prev.seq + 1, data: chunk }));
+
         const lines = (payload.data ?? "")
           .split(/\r?\n/)
           .map((line) => line.trimEnd())
@@ -71,6 +110,7 @@ export function App() {
 
       if (payload.type === "exit") {
         setTerminalLogs((prev) => [...prev.slice(-600), `Terminal exited with code ${payload.code ?? 0}`]);
+        setTerminalId(null);
       }
 
       if (payload.type === "error") {
@@ -82,6 +122,45 @@ export function App() {
       disposeTerminal();
     };
   }, [terminalId]);
+
+  useEffect(() => {
+    if (!dragState) {
+      return;
+    }
+
+    const onMove = (event: MouseEvent) => {
+      if (dragState.target === "left") {
+        const deltaX = event.clientX - dragState.startX;
+        setLeftPaneWidth(Math.min(420, Math.max(220, dragState.startLeft + deltaX)));
+      }
+
+      if (dragState.target === "right") {
+        const deltaX = event.clientX - dragState.startX;
+        setRightPaneWidth(Math.min(460, Math.max(240, dragState.startRight - deltaX)));
+      }
+
+      if (dragState.target === "bottom") {
+        const deltaY = event.clientY - dragState.startY;
+        setBottomPaneHeight(Math.min(460, Math.max(180, dragState.startBottom - deltaY)));
+      }
+    };
+
+    const onUp = () => {
+      setDragState(null);
+    };
+
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = dragState.target === "bottom" ? "row-resize" : "col-resize";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+
+    return () => {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [dragState]);
 
   const openTabs = useMemo(
     () => tabOrder.map((path) => tabs[path]).filter((tab): tab is OpenTab => Boolean(tab)),
@@ -215,27 +294,37 @@ export function App() {
     setRuntimeLogs((prev) => [...prev.slice(-300), `Command started: ${commandInput} (${runId})`]);
   }
 
-  async function sendTerminalInput() {
+  const sendTerminalInput = useCallback(async (data: string) => {
     if (!terminalId) {
       setTerminalLogs((prev) => [...prev.slice(-600), "Terminal is not initialized."]);
       return;
     }
-    if (!terminalInput.trim()) {
+
+    if (!data) {
       return;
     }
 
-    await window.envoy.writeTerminal(terminalId, `${terminalInput}\n`);
-    setTerminalInput("");
-  }
+    await window.envoy.writeTerminal(terminalId, data);
+  }, [terminalId]);
 
-  async function stopTerminal() {
+  const resizeTerminal = useCallback(
+    async (cols: number, rows: number) => {
+      if (!terminalId) {
+        return;
+      }
+      await window.envoy.resizeTerminal(terminalId, cols, rows);
+    },
+    [terminalId],
+  );
+
+  const stopTerminal = useCallback(async () => {
     if (!terminalId) {
       return;
     }
     await window.envoy.killTerminal(terminalId);
     setTerminalId(null);
     setTerminalLogs((prev) => [...prev.slice(-600), "Terminal stopped."]);
-  }
+  }, [terminalId]);
 
   function closeTab(path: string) {
     setTabs((prev) => {
@@ -257,9 +346,29 @@ export function App() {
     });
   }
 
+  function startDrag(event: ReactMouseEvent, target: DragTarget) {
+    event.preventDefault();
+    setDragState({
+      target,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: leftPaneWidth,
+      startRight: rightPaneWidth,
+      startBottom: bottomPaneHeight,
+    });
+  }
+
   const activeFileName = activePath?.split(/[\\/]/).pop() ?? "No file";
   const projectName = projectRoot?.split(/[\\/]/).filter(Boolean).pop() ?? "No project";
-  const activeBottomLogs = bottomView === "terminal" ? terminalLogs : runtimeLogs;
+
+  const ideLayoutStyle = {
+    "--left-pane-width": `${leftPaneWidth}px`,
+    "--right-pane-width": `${rightPaneWidth}px`,
+  } as CSSProperties;
+
+  const centerLayoutStyle = {
+    "--bottom-pane-height": `${bottomPaneHeight}px`,
+  } as CSSProperties;
 
   return (
     <div className="app-shell">
@@ -270,9 +379,15 @@ export function App() {
         commandInput={commandInput}
         setCommandInput={setCommandInput}
         projectRoot={projectRoot}
+        theme={theme}
+        setTheme={(value) => {
+          if (value === "aurora" || value === "graphite" || value === "ember") {
+            setTheme(value);
+          }
+        }}
       />
 
-      <div className="ide-body">
+      <div className="ide-body" style={ideLayoutStyle}>
         <aside className="activity-rail glass-panel">
           <button
             className={activityView === "explorer" ? "active" : ""}
@@ -306,7 +421,14 @@ export function App() {
           )}
         </aside>
 
-        <main className="center-pane">
+        <div
+          className="pane-splitter vertical"
+          onMouseDown={(event) => {
+            startDrag(event, "left");
+          }}
+        />
+
+        <main className="center-pane" style={centerLayoutStyle}>
           <EditorPane
             tabs={openTabs}
             activePath={activePath}
@@ -316,6 +438,13 @@ export function App() {
               void saveActiveFile();
             }}
             onChange={handleEditorChange}
+          />
+
+          <div
+            className="pane-splitter horizontal"
+            onMouseDown={(event) => {
+              startDrag(event, "bottom");
+            }}
           />
 
           <section className="panel bottom-panel glass-panel">
@@ -333,18 +462,26 @@ export function App() {
                 Events
               </button>
             </div>
-            <TerminalPanel
-              title={bottomView === "terminal" ? "Terminal" : "Runtime Events"}
-              logs={activeBottomLogs}
-              terminalInput={terminalInput}
-              setTerminalInput={setTerminalInput}
-              onSend={sendTerminalInput}
-              onStop={stopTerminal}
-              hasTerminal={Boolean(terminalId)}
-              showControls={bottomView === "terminal"}
-            />
+            {bottomView === "terminal" ? (
+              <XtermViewport
+                terminalId={terminalId}
+                latestChunk={latestTerminalChunk}
+                onWrite={sendTerminalInput}
+                onResize={resizeTerminal}
+                onStop={stopTerminal}
+              />
+            ) : (
+              <TerminalPanel title="Runtime Events" logs={runtimeLogs} />
+            )}
           </section>
         </main>
+
+        <div
+          className="pane-splitter vertical"
+          onMouseDown={(event) => {
+            startDrag(event, "right");
+          }}
+        />
 
         <InspectorPanel
           projectRoot={projectRoot}
