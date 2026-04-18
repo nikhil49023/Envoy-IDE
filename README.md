@@ -1,90 +1,47 @@
 # Envoy IDE
 
-Envoy IDE is a desktop-first ML workbench built with Electron + Monaco + React + a Python workflow engine.
+Envoy IDE is now rebuilt cleanly on top of VS Code OSS.
 
-## Stack
+The primary app target in this repository is `apps/vscode-oss`, which:
 
-- Desktop shell: Electron
-- UI: React + TypeScript
-- Editor core: Monaco
-- Runtime bridge: Electron IPC and process streaming
-- Workflow engine: Python (`python/axiom_engine`)
-- Local metadata: SQLite in project-local `.axiom/` folder
+- bootstraps upstream VS Code OSS from Microsoft
+- applies Envoy product overrides
+- loads the Envoy ML extension layer
+- runs with isolated user-data and extension directories
 
 ## Monorepo Layout
 
-- apps/desktop: Electron app and renderer
-- packages: shared domain services and core types
-- python/axiom_engine: dataset/evaluation/export/simulation engine and CLI
-- docs: architecture and runbook docs
-
-## Quick Start
-
-1. Install Node 20+ and Python 3.10+.
-2. Install desktop dependencies:
-   - cd apps/desktop
-   - npm install
-3. Run desktop app:
-   - npm run dev
-
-Python workflow runs are launched by the desktop runtime using `python3 -m axiom_engine.cli`.
-
-## Desktop Scope Implemented
-
-- Multi-pane IDE shell (left explorer, center Monaco, right inspector, bottom terminal/logs, top command bar)
-- Folder open, file read/write, tabs, dirty tracking hooks
-- Integrated run command execution with live stdout/stderr events
-- Integrated terminal sessions with PTY support (node-pty) and fallback shell mode
-- Workflow run execution with event-streamed lifecycle and artifact metadata
-- Project-local `.axiom/metadata.db` run registry
-
-## Terminal Notes
-
-- Terminal sessions are created when a project folder is opened.
-- The bottom panel accepts interactive commands and streams output live.
-- If PTY support is unavailable on a host, Envoy falls back to a standard shell process.
-
-## Next Steps
-
-- Add debugger and richer diagnostics
-- Add dataset/eval/export/simulation panel forms and validations
-- Add packaging pipelines for Windows and Linux installers
-# Envoy IDE: Code Review Graph Integration
-
-This repository boots the first implementation layer for an IDE that is powered by `code-review-graph`.
-
-Current milestone:
-- FastAPI adapter service that exposes IDE-friendly endpoints
-- Process-isolated CLI execution wrappers
-- Graph bootstrap and diagnostics workflows
-- Implementation documentation bundle
+- `apps/vscode-oss`: VS Code OSS bootstrap, sync, run, and build pipeline
+- `apps/vscode-oss/extensions/envoy-ml`: first-party Envoy extension for ML commands/dashboard
+- `apps/desktop`: legacy custom Electron shell (kept for reference)
+- `python/axiom_engine`: workflow engine and local run metadata support
+- `packages`: shared types and domain modules
 
 ## Quick Start
 
 1. Install Python 3.10+.
-2. Create a virtual environment inside `apps/api`.
-3. Install backend dependencies.
-4. Install `code-review-graph` in the same environment.
-5. Start the API server.
+2. Install the Node version required by upstream VS Code OSS (see `apps/vscode-oss/.upstream/vscode/.nvmrc` after first bootstrap; currently Node 22.22.1+).
+3. Bootstrap VS Code OSS and dependencies:
+   - `npm run bootstrap -w apps/vscode-oss`
+4. Launch Envoy on VS Code OSS:
+   - `npm run dev`
 
-```bash
-cd apps/api
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-pip install code-review-graph
-uvicorn app.main:app --reload --port 8080
-```
+## Root Scripts
 
-API root: `http://localhost:8080`
+- `npm run dev`: runs the VS Code OSS Envoy entrypoint
+- `npm run build`: builds the VS Code OSS Linux target
+- `npm run dev:legacy`: runs the old custom Electron shell
+- `npm run build:legacy`: builds the old custom Electron shell
 
-## What Is Implemented
+## Extension Commands
 
-- `POST /api/v1/graph/install`
-- `POST /api/v1/graph/build`
-- `POST /api/v1/graph/update`
-- `POST /api/v1/graph/detect-changes`
-- `GET /api/v1/graph/status`
-- `GET /api/v1/health`
+After launch, use the command palette:
 
-The backend calls the `code-review-graph` CLI through isolated subprocess execution and returns structured responses suitable for IDE UI consumption.
+- `Envoy: Open Workflow Dashboard`
+- `Envoy: Run Python Tests`
+- `Envoy: Run Inspection Workflow`
+
+## Notes
+
+- Upstream VS Code OSS source is materialized under `apps/vscode-oss/.upstream/vscode` and ignored by git.
+- Envoy runtime metadata remains project-local under `.axiom`.

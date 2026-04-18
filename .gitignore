@@ -46,3 +46,7 @@ apps/web/.env.local
 .code-review-graph/
 apps/api/.mypy_cache/
 apps/api/.ruff_cache/
+apps/vscode-oss/.upstream/
+apps/vscode-oss/.build/
+apps/vscode-oss/extensions/envoy-ml/node_modules/
+apps/vscode-oss/extensions/envoy-ml/dist/

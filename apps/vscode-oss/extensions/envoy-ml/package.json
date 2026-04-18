@@ -1,0 +1,40 @@
+{
+  "name": "envoy-ml",
+  "displayName": "Envoy ML Toolkit",
+  "description": "ML workflow commands and dashboard for Envoy IDE on top of VS Code OSS.",
+  "publisher": "envoy",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "onCommand:envoy.openWorkflowDashboard",
+    "onCommand:envoy.runPytest",
+    "onCommand:envoy.runInspectionWorkflow"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "envoy.openWorkflowDashboard",
+        "title": "Envoy: Open Workflow Dashboard"
+      },
+      {
+        "command": "envoy.runPytest",
+        "title": "Envoy: Run Python Tests"
+      },
+      {
+        "command": "envoy.runInspectionWorkflow",
+        "title": "Envoy: Run Inspection Workflow"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}

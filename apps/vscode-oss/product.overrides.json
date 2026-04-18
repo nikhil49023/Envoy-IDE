@@ -1,0 +1,13 @@
+{
+  "nameShort": "Envoy IDE",
+  "nameLong": "Envoy IDE",
+  "applicationName": "envoy-ide",
+  "dataFolderName": ".envoy-ide",
+  "urlProtocol": "envoy-ide",
+  "linuxIconName": "envoy-ide",
+  "licenseName": "MIT",
+  "extensionsGallery": {
+    "serviceUrl": "https://open-vsx.org/vscode/gallery",
+    "itemUrl": "https://open-vsx.org/vscode/item"
+  }
+}
