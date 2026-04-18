@@ -374,10 +374,76 @@ select {
   text-align: center;
 }
 
+.explorer-empty.compact {
+  padding: 10px;
+  font-size: 11px;
+}
+
+.explorer-section {
+  border: 1px solid rgba(140, 170, 201, 0.15);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  padding: 6px;
+  background: rgba(13, 21, 31, 0.35);
+}
+
+.explorer-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--text-soft);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  list-style: none;
+}
+
+.explorer-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.explorer-section-count {
+  color: var(--text-main);
+  font-size: 10px;
+}
+
+.explorer-section-actions {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.explorer-section-actions button {
+  border: 1px solid var(--line-soft);
+  color: var(--text-main);
+  background: linear-gradient(180deg, rgba(61, 87, 114, 0.42), rgba(31, 49, 70, 0.36));
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.explorer-section-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .tree-list {
   list-style: none;
   margin: 0;
   padding-left: 16px;
+}
+
+.tree-list.flat {
+  padding-left: 0;
+}
+
+.tree-file-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
 }
 
 .tree-list details > summary {
@@ -411,6 +477,22 @@ select {
 .tree-file.active {
   border-color: rgba(111, 216, 229, 0.36);
   background: rgba(61, 110, 124, 0.2);
+}
+
+.fav-toggle {
+  border: 1px solid var(--line-soft);
+  color: var(--text-soft);
+  background: rgba(27, 38, 52, 0.6);
+  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.fav-toggle.active {
+  color: #ffd48e;
+  border-color: rgba(255, 212, 142, 0.45);
+  background: rgba(124, 88, 36, 0.35);
 }
 
 .node-icon {
@@ -473,6 +555,16 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.node-path {
+  margin-left: auto;
+  max-width: 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: rgba(166, 182, 203, 0.7);
 }
 
 .node-count {
@@ -694,6 +786,113 @@ select {
   background: linear-gradient(180deg, rgba(20, 28, 42, 0.75), rgba(10, 17, 28, 0.78));
 }
 
+.quick-open-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 7, 14, 0.58);
+  display: grid;
+  place-items: start center;
+  padding-top: 8vh;
+  z-index: 55;
+}
+
+.quick-open-panel {
+  width: min(760px, 92vw);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.quick-open-input {
+  width: 100%;
+  border: 1px solid var(--line-soft);
+  background: rgba(8, 14, 22, 0.72);
+  color: var(--text-main);
+  border-radius: 11px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.quick-open-input:focus {
+  border-color: rgba(111, 216, 229, 0.45);
+  box-shadow: 0 0 0 3px rgba(63, 182, 198, 0.15);
+}
+
+.quick-open-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+.quick-open-list {
+  margin: 8px 0 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 52vh;
+  overflow: auto;
+}
+
+.quick-open-empty {
+  padding: 12px;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.quick-open-item {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.quick-open-item.active,
+.quick-open-item:hover {
+  border-color: rgba(111, 216, 229, 0.35);
+  background: rgba(53, 86, 109, 0.22);
+}
+
+.quick-open-kind {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--line-soft);
+  display: inline-grid;
+  place-items: center;
+  font-size: 9px;
+  color: var(--text-soft);
+}
+
+.quick-open-kind.file {
+  background: rgba(89, 153, 214, 0.26);
+}
+
+.quick-open-kind.action {
+  background: rgba(115, 174, 163, 0.25);
+}
+
+.quick-open-text {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.quick-open-label {
+  font-size: 13px;
+}
+
+.quick-open-description {
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
 @keyframes shell-enter {
   from {
     opacity: 0;
@@ -707,7 +906,7 @@ select {
 
 @media (max-width: 1450px) {
   .command-bar {
-    grid-template-columns: auto 1fr auto auto auto;
+    grid-template-columns: auto 1fr auto auto auto auto;
     grid-template-rows: auto auto;
   }
 

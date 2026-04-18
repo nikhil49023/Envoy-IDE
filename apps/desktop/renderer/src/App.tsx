@@ -6,6 +6,8 @@ import type { FileNode, OpenTab } from "@core-types/index";
 import { EditorPane } from "./editor/EditorPane";
 import { FileExplorer } from "./explorer/FileExplorer";
 import { CommandBar } from "./layout/CommandBar";
+import { QuickOpenPalette } from "./layout/QuickOpenPalette";
+import type { QuickOpenItem } from "./layout/QuickOpenPalette";
 import { InspectorPanel } from "./panels/InspectorPanel";
 import { TerminalPanel } from "./terminal/TerminalPanel";
 import { XtermViewport } from "./terminal/XtermViewport";
@@ -32,6 +34,8 @@ type TerminalChunk = {
 
 const STORAGE_THEME_KEY = "envoy-ui-theme";
 const STORAGE_LAYOUT_KEY = "envoy-ui-layout";
+const STORAGE_FAVORITES_KEY = "envoy-ui-favorites";
+const STORAGE_RECENT_KEY = "envoy-ui-recent";
 
 const WORKFLOW_OPTIONS = [
   { id: "evaluation", label: "Evaluation" },
@@ -39,6 +43,50 @@ const WORKFLOW_OPTIONS = [
   { id: "simulation", label: "Simulation" },
   { id: "inspection", label: "Inspection" },
 ] as const;
+
+function readStoredArray(key: string): string[] {
+  const value = window.localStorage.getItem(key);
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
+function collectFilePaths(nodes: FileNode[]): string[] {
+  const result: string[] = [];
+
+  function visit(list: FileNode[]) {
+    list.forEach((node) => {
+      if (node.type === "file") {
+        result.push(node.path);
+      } else {
+        visit(node.children ?? []);
+      }
+    });
+  }
+
+  visit(nodes);
+  return result;
+}
+
+function nextThemePreset(theme: ThemePreset): ThemePreset {
+  if (theme === "aurora") {
+    return "graphite";
+  }
+  if (theme === "graphite") {
+    return "ember";
+  }
+  return "aurora";
+}
 
 export function App() {
   const [projectRoot, setProjectRoot] = useState<string | null>(null);
@@ -73,6 +121,10 @@ export function App() {
     }
     return "balanced";
   });
+  const [favorites, setFavorites] = useState<string[]>(() => readStoredArray(STORAGE_FAVORITES_KEY));
+  const [recentFiles, setRecentFiles] = useState<string[]>(() => readStoredArray(STORAGE_RECENT_KEY));
+  const [isQuickOpenVisible, setIsQuickOpenVisible] = useState(false);
+  const [quickOpenQuery, setQuickOpenQuery] = useState("");
   const [leftPaneWidth, setLeftPaneWidth] = useState(280);
   const [rightPaneWidth, setRightPaneWidth] = useState(300);
   const [bottomPaneHeight, setBottomPaneHeight] = useState(270);
@@ -82,6 +134,14 @@ export function App() {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(STORAGE_THEME_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_FAVORITES_KEY, JSON.stringify(favorites));
+  }, [favorites]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_RECENT_KEY, JSON.stringify(recentFiles));
+  }, [recentFiles]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_LAYOUT_KEY, layoutPreset);
@@ -204,6 +264,110 @@ export function App() {
     () => tabOrder.map((path) => tabs[path]).filter((tab): tab is OpenTab => Boolean(tab)),
     [tabOrder, tabs],
   );
+  const allProjectFiles = useMemo(() => collectFilePaths(tree), [tree]);
+  const filePathSet = useMemo(() => new Set(allProjectFiles), [allProjectFiles]);
+  const visibleFavorites = useMemo(
+    () => favorites.filter((path) => filePathSet.has(path)),
+    [favorites, filePathSet],
+  );
+  const visibleRecentFiles = useMemo(
+    () => recentFiles.filter((path) => filePathSet.has(path)),
+    [recentFiles, filePathSet],
+  );
+
+  const quickOpenItems = useMemo(() => {
+    const normalizedQuery = quickOpenQuery.trim().toLowerCase();
+
+    const actions: QuickOpenItem[] = [
+      {
+        id: "action:open-project",
+        kind: "action",
+        label: "Open Project",
+        description: "Select a folder for this workspace",
+      },
+      {
+        id: "action:workflow-evaluation",
+        kind: "action",
+        label: "Run Evaluation Workflow",
+      },
+      {
+        id: "action:workflow-export",
+        kind: "action",
+        label: "Run Export Workflow",
+      },
+      {
+        id: "action:workflow-simulation",
+        kind: "action",
+        label: "Run Simulation Workflow",
+      },
+      {
+        id: "action:workflow-inspection",
+        kind: "action",
+        label: "Run Inspection Workflow",
+      },
+      {
+        id: "action:focus-explorer",
+        kind: "action",
+        label: "Focus Explorer",
+      },
+      {
+        id: "action:focus-workflows",
+        kind: "action",
+        label: "Focus Workflow Studio",
+      },
+      {
+        id: "action:bottom-terminal",
+        kind: "action",
+        label: "Show Terminal Panel",
+      },
+      {
+        id: "action:bottom-events",
+        kind: "action",
+        label: "Show Runtime Events Panel",
+      },
+      {
+        id: "action:cycle-theme",
+        kind: "action",
+        label: "Cycle Theme Preset",
+      },
+      {
+        id: "action:cycle-layout",
+        kind: "action",
+        label: "Cycle Layout Preset",
+      },
+    ];
+
+    const actionResults = actions.filter((item) => {
+      if (normalizedQuery.length === 0) {
+        return true;
+      }
+      return (
+        item.label.toLowerCase().includes(normalizedQuery) ||
+        (item.description ?? "").toLowerCase().includes(normalizedQuery)
+      );
+    });
+
+    const recentPriority = [...visibleRecentFiles, ...allProjectFiles.filter((path) => !visibleRecentFiles.includes(path))];
+
+    const fileResults = recentPriority
+      .filter((path) => {
+        if (normalizedQuery.length === 0) {
+          return true;
+        }
+        const name = path.split(/[\\/]/).pop()?.toLowerCase() ?? "";
+        return name.includes(normalizedQuery) || path.toLowerCase().includes(normalizedQuery);
+      })
+      .slice(0, 180)
+      .map((path) => ({
+        id: `file:${path}`,
+        kind: "file" as const,
+        label: path.split(/[\\/]/).pop() ?? path,
+        description: path,
+        path,
+      }));
+
+    return [...actionResults.slice(0, 30), ...fileResults].slice(0, 220);
+  }, [allProjectFiles, quickOpenQuery, visibleRecentFiles]);
 
   const saveActiveFile = useCallback(async () => {
     if (!activePath) {
@@ -236,6 +400,12 @@ export function App() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
         void saveActiveFile();
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        setQuickOpenQuery("");
+        setIsQuickOpenVisible(true);
       }
     };
 
@@ -284,6 +454,16 @@ export function App() {
     }));
     setTabOrder((prev) => (prev.includes(path) ? prev : [...prev, path]));
     setActivePath(path);
+    setRecentFiles((prev) => [path, ...prev.filter((item) => item !== path)].slice(0, 30));
+  }
+
+  function toggleFavorite(path: string) {
+    setFavorites((prev) => {
+      if (prev.includes(path)) {
+        return prev.filter((item) => item !== path);
+      }
+      return [path, ...prev].slice(0, 60);
+    });
   }
 
   function handleEditorChange(value: string) {
@@ -384,6 +564,69 @@ export function App() {
     });
   }
 
+  function runQuickAction(actionId: string) {
+    switch (actionId) {
+      case "action:open-project":
+        void handleOpenFolder();
+        break;
+      case "action:workflow-evaluation":
+        void runWorkflow("evaluation");
+        break;
+      case "action:workflow-export":
+        void runWorkflow("export");
+        break;
+      case "action:workflow-simulation":
+        void runWorkflow("simulation");
+        break;
+      case "action:workflow-inspection":
+        void runWorkflow("inspection");
+        break;
+      case "action:focus-explorer":
+        setActivityView("explorer");
+        break;
+      case "action:focus-workflows":
+        setActivityView("workflows");
+        break;
+      case "action:bottom-terminal":
+        setBottomView("terminal");
+        break;
+      case "action:bottom-events":
+        setBottomView("events");
+        break;
+      case "action:cycle-theme":
+        setTheme((prev) => nextThemePreset(prev));
+        break;
+      case "action:cycle-layout":
+        setLayoutPreset((prev) => {
+          if (prev === "balanced") {
+            return "focus";
+          }
+          if (prev === "focus") {
+            return "analysis";
+          }
+          if (prev === "analysis") {
+            return "wide";
+          }
+          return "balanced";
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  function handleQuickOpenChoose(item: QuickOpenItem) {
+    if (item.kind === "file" && item.path) {
+      void handleOpenFile(item.path);
+    }
+
+    if (item.kind === "action") {
+      runQuickAction(item.id);
+    }
+
+    setIsQuickOpenVisible(false);
+  }
+
   function startDrag(event: ReactMouseEvent, target: DragTarget) {
     event.preventDefault();
     setDragState({
@@ -449,7 +692,15 @@ export function App() {
 
         <aside className="left-pane">
           {activityView === "explorer" ? (
-            <FileExplorer nodes={tree} onOpenFile={handleOpenFile} activePath={activePath} />
+            <FileExplorer
+              nodes={tree}
+              onOpenFile={handleOpenFile}
+              activePath={activePath}
+              favorites={visibleFavorites}
+              recentFiles={visibleRecentFiles}
+              onToggleFavorite={toggleFavorite}
+              onClearRecent={() => setRecentFiles([])}
+            />
           ) : (
             <section className="panel workflow-panel glass-panel">
               <h3 className="panel-title">Workflow Studio</h3>
@@ -540,6 +791,15 @@ export function App() {
         <span>Run: {latestRunId ?? "none"}</span>
         <span>Terminal: {terminalId ? "connected" : "offline"}</span>
       </footer>
+
+      <QuickOpenPalette
+        open={isQuickOpenVisible}
+        query={quickOpenQuery}
+        setQuery={setQuickOpenQuery}
+        items={quickOpenItems}
+        onClose={() => setIsQuickOpenVisible(false)}
+        onChoose={handleQuickOpenChoose}
+      />
     </div>
   );
 }

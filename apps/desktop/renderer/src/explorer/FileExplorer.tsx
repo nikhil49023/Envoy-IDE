@@ -6,6 +6,10 @@ type FileExplorerProps = {
   nodes: FileNode[];
   onOpenFile: (path: string) => void;
   activePath: string | null;
+  favorites: string[];
+  recentFiles: string[];
+  onToggleFavorite: (path: string) => void;
+  onClearRecent: () => void;
 };
 
 function compareNodes(a: FileNode, b: FileNode): number {
@@ -112,6 +116,8 @@ function TreeNode({
   node,
   onOpenFile,
   activePath,
+  favoriteSet,
+  onToggleFavorite,
   expanded,
   onToggle,
   query,
@@ -119,6 +125,8 @@ function TreeNode({
   node: FileNode;
   onOpenFile: (path: string) => void;
   activePath: string | null;
+  favoriteSet: Set<string>;
+  onToggleFavorite: (path: string) => void;
   expanded: Set<string>;
   onToggle: (path: string) => void;
   query: string;
@@ -126,9 +134,10 @@ function TreeNode({
   if (node.type === "file") {
     const extension = extensionOf(node.name);
     const kind = fileKind(extension);
+    const isFavorite = favoriteSet.has(node.path);
 
     return (
-      <li>
+      <li className="tree-file-row">
         <button
           className={`tree-file ${activePath === node.path ? "active" : ""}`.trim()}
           onClick={() => onOpenFile(node.path)}
@@ -137,6 +146,13 @@ function TreeNode({
             {extension.slice(0, 1).toUpperCase()}
           </span>
           <span className="node-label">{node.name}</span>
+        </button>
+        <button
+          className={`fav-toggle ${isFavorite ? "active" : ""}`.trim()}
+          onClick={() => onToggleFavorite(node.path)}
+          title={isFavorite ? "Remove favorite" : "Add favorite"}
+        >
+          {isFavorite ? "*" : "+"}
         </button>
       </li>
     );
@@ -167,6 +183,8 @@ function TreeNode({
               node={child}
               onOpenFile={onOpenFile}
               activePath={activePath}
+              favoriteSet={favoriteSet}
+              onToggleFavorite={onToggleFavorite}
               expanded={expanded}
               onToggle={onToggle}
               query={query}
@@ -178,12 +196,58 @@ function TreeNode({
   );
 }
 
-export function FileExplorer({ nodes, onOpenFile, activePath }: FileExplorerProps) {
+function flatFileRow({
+  path,
+  activePath,
+  onOpenFile,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  path: string;
+  activePath: string | null;
+  onOpenFile: (path: string) => void;
+  isFavorite: boolean;
+  onToggleFavorite: (path: string) => void;
+}) {
+  const name = path.split(/[\\/]/).pop() ?? path;
+  const extension = extensionOf(name);
+  const kind = fileKind(extension);
+
+  return (
+    <li key={path} className="tree-file-row">
+      <button className={`tree-file ${activePath === path ? "active" : ""}`.trim()} onClick={() => onOpenFile(path)}>
+        <span className={`node-icon file ${kind}`} aria-hidden>
+          {extension.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="node-label">{name}</span>
+        <span className="node-path">{path}</span>
+      </button>
+      <button
+        className={`fav-toggle ${isFavorite ? "active" : ""}`.trim()}
+        onClick={() => onToggleFavorite(path)}
+        title={isFavorite ? "Remove favorite" : "Add favorite"}
+      >
+        {isFavorite ? "*" : "+"}
+      </button>
+    </li>
+  );
+}
+
+export function FileExplorer({
+  nodes,
+  onOpenFile,
+  activePath,
+  favorites,
+  recentFiles,
+  onToggleFavorite,
+  onClearRecent,
+}: FileExplorerProps) {
   const [query, setQuery] = useState("");
   const [showHidden, setShowHidden] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const sortedNodes = useMemo(() => [...nodes].sort(compareNodes), [nodes]);
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
   const visibleNodes = useMemo(
     () => filterTree(sortedNodes, query, showHidden),
     [sortedNodes, query, showHidden],
@@ -244,23 +308,80 @@ export function FileExplorer({ nodes, onOpenFile, activePath }: FileExplorerProp
         </div>
       </div>
 
-      {visibleNodes.length === 0 ? (
-        <div className="explorer-empty">No files match this filter.</div>
-      ) : (
-        <ul className="tree-list">
-          {visibleNodes.map((node) => (
-            <TreeNode
-              key={node.path}
-              node={node}
-              onOpenFile={onOpenFile}
-              activePath={activePath}
-              expanded={expanded}
-              onToggle={toggleExpanded}
-              query={query}
-            />
-          ))}
-        </ul>
-      )}
+      <details className="explorer-section" open>
+        <summary>
+          Favorites
+          <span className="explorer-section-count">{favorites.length}</span>
+        </summary>
+        {favorites.length === 0 ? (
+          <div className="explorer-empty compact">Star files to pin them here.</div>
+        ) : (
+          <ul className="tree-list flat">
+            {favorites.map((path) =>
+              flatFileRow({
+                path,
+                activePath,
+                onOpenFile,
+                isFavorite: true,
+                onToggleFavorite,
+              }),
+            )}
+          </ul>
+        )}
+      </details>
+
+      <details className="explorer-section" open>
+        <summary>
+          Recent
+          <span className="explorer-section-count">{recentFiles.length}</span>
+        </summary>
+        <div className="explorer-section-actions">
+          <button onClick={onClearRecent} disabled={recentFiles.length === 0}>
+            Clear
+          </button>
+        </div>
+        {recentFiles.length === 0 ? (
+          <div className="explorer-empty compact">Recently opened files appear here.</div>
+        ) : (
+          <ul className="tree-list flat">
+            {recentFiles.map((path) =>
+              flatFileRow({
+                path,
+                activePath,
+                onOpenFile,
+                isFavorite: favoriteSet.has(path),
+                onToggleFavorite,
+              }),
+            )}
+          </ul>
+        )}
+      </details>
+
+      <details className="explorer-section" open>
+        <summary>
+          Project
+          <span className="explorer-section-count">{counts.folders + counts.files}</span>
+        </summary>
+        {visibleNodes.length === 0 ? (
+          <div className="explorer-empty">No files match this filter.</div>
+        ) : (
+          <ul className="tree-list">
+            {visibleNodes.map((node) => (
+              <TreeNode
+                key={node.path}
+                node={node}
+                onOpenFile={onOpenFile}
+                activePath={activePath}
+                favoriteSet={favoriteSet}
+                onToggleFavorite={onToggleFavorite}
+                expanded={expanded}
+                onToggle={toggleExpanded}
+                query={query}
+              />
+            ))}
+          </ul>
+        )}
+      </details>
     </section>
   );
 }
