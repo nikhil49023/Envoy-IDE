@@ -1,0 +1,13 @@
+{
+  "name": "envoy-ide-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/desktop",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/desktop",
+    "build": "npm run build -w apps/desktop"
+  }
+}
