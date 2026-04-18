@@ -1,82 +1,100 @@
-# Envoy IDE Architecture
+# Cytos IDE — Architecture
 
-## Subsystems
+## Overview
 
-1. IDE shell: Electron main process and renderer window layout.
-2. Editor system: Monaco-based editing, tabs, file explorer, and save cycle.
-3. Project runtime: process execution bridge over IPC with live event streaming.
-4. Workflow engine: Python domain workflows for dataset, evaluation, export, simulation, and inspection.
-5. Insight panels: inspector and bottom log panel, with room for metrics/artifact dashboards.
-6. Assistant layer: constrained guidance surface bound to context and run artifacts.
-7. Center work modes: script production mode, notebook exploration mode, and workflow lifecycle mode.
+Cytos IDE is VS Code OSS with:
+1. **Product overrides** applied at build time (branding, extension gallery endpoint)
+2. **A first-party extension** (`cytos-ml`) loaded via `--extensionDevelopmentPath`
+3. **A local Python engine** (`cytos_engine`) for ML workflow execution
 
-## Event Model
+There is no custom Electron shell, no embedded Monaco renderer, and no separate IPC bridge. All editor functionality is inherited from upstream VS Code.
 
-Runtime and workflow processes emit JSON event objects:
+## Repository Layout
 
-- run_started
-- step_started
-- log
-- metric
-- artifact
-- run_completed
-- process_exit
-- process_error
+```
+cytos-ide/
+├── apps/vscode-oss/          # VS Code OSS integration layer
+│   ├── scripts/              # Bootstrap, sync, run, build scripts
+│   ├── extensions/cytos-ml/  # First-party VS Code extension
+│   ├── product.overrides.json
+│   └── .upstream/vscode/     # Upstream VS Code OSS (git-ignored, auto-fetched)
+├── packages/core-types/      # Shared TypeScript type definitions
+└── python/cytos_engine/      # ML workflow engine (Python)
+```
 
-These events are pushed from Electron main to renderer via the envoy:runtime-event IPC channel.
+## Component Responsibilities
 
-Inline notebook/script execution uses a dedicated envoy:execute-python IPC entrypoint, which returns structured outputs including stdout/stderr, variable summaries, dataframe previews, plot images, and HTML/widget-like rich output.
+### `apps/vscode-oss/`
 
-## Local Project State
+The integration layer. Does not modify upstream VS Code source directly. Instead it:
 
-Each project uses a hidden .axiom folder:
+- Clones/updates upstream from `github.com/microsoft/vscode` (shallow, tracking `main`)
+- Merges `product.overrides.json` into upstream `product.json` before compile/run
+- Compiles upstream VS Code and launches it with isolated `--user-data-dir` and `--extensions-dir`
+- Loads `extensions/cytos-ml` via `--extensionDevelopmentPath`
 
-- .axiom/runs
-- .axiom/artifacts
-- .axiom/datasets
-- .axiom/exports
-- .axiom/cache
-- .axiom/assistant
-- .axiom/metadata.db
+### `extensions/cytos-ml/`
 
-## Desktop-First Notes
+The first-party Cytos extension contributes:
 
-This implementation is not a VS Code fork. It is a custom Electron IDE using Monaco for the editing core and a Python engine for ML workflows.
-# Architecture
+- **`cytos.openWorkflowDashboard`**: webview panel showing experiment tracker, dataset registry, artifact counts, and reproducibility info (backed by `cytos_engine` metadata via inline Python subprocess)
+- **`cytos.runPytest`**: runs `python3 -m pytest -q` in an integrated terminal
+- **`cytos.runInspectionWorkflow`**: runs `python3 -m cytos_engine.cli run --workflow inspection`
 
-## High-Level Components
+Extension reads ML metadata by executing a short Python script inline (no separate server process required). Supports `python3`, `python`, and `py -3` fallback chain.
 
-1. IDE Frontend (planned)
-2. Envoy API Adapter (implemented)
-3. `code-review-graph` CLI and MCP server (upstream dependency)
-4. Repository-local graph storage (`.code-review-graph/graph.db`)
+### `python/cytos_engine/`
 
-## Data Flow
+Local ML workflow engine. Provides:
 
-1. User triggers action from IDE (install/build/update/status/detect-changes)
-2. Frontend calls Envoy API endpoint
-3. API validates request and launches process-isolated command
-4. `code-review-graph` performs parse/query/update work
-5. API returns structured result with stdout/stderr/timing/exit code
-6. Frontend renders command status and diagnostics
+- `dataset` — data prep workflows
+- `evaluation` — model evaluation
+- `export` — artifact export
+- `simulation` — inference simulation
+- `inspection` — multi-format model scanning (ONNX, PyTorch, safetensors, GGUF, TFLite, Keras, CoreML)
+- `cli` — command-line entrypoint consumed by the VS Code extension
+- `store.py` — SQLite-backed run metadata store
+- `engine.py` — orchestrator
 
-## Adapter Boundary
+### `packages/core-types/`
 
-The adapter does not reimplement parsing, graph storage, or impact logic. It only:
-- normalizes request/response contracts
-- handles process execution, timeout, and error mapping
-- provides a stable integration point for IDE UI and assistant workflows
+Shared TypeScript types (`WorkflowType`, `RuntimeEvent`, `FileNode`, `OpenTab`). Imported by the extension and any future tooling that needs Cytos domain types.
 
-## Why This Boundary
+## Local Project State (`.cytos/`)
 
-- Faster delivery
-- Lower maintenance cost
-- Easy upstream upgrades
-- Clear ownership split between platform and graph engine
+Each workspace folder that Cytos opens stores local ML run state in `.cytos/`:
 
-## Future Extension Points
+```
+.cytos/
+├── runs/           # Persisted run output directories
+├── artifacts/      # Models, reports, checkpoints, embeddings
+├── datasets/       # Dataset files indexed by the extension
+├── exports/        # Export outputs
+├── cache/          # Intermediate caches
+├── assistant/      # Assistant context
+└── metadata.db     # SQLite run log (queried by the dashboard)
+```
 
-1. Job queue for long-running operations
-2. SSE or WebSocket progress streaming
-3. Command history persistence
-4. Selective advanced queries via MCP tool invocation layer
+This directory is excluded from git per `.gitignore`.
+
+## Extension Gallery
+
+Cytos redirects the VS Code extension marketplace to Open VSX (`open-vsx.org`) via `product.overrides.json`. This avoids dependency on Microsoft's proprietary marketplace for a VS Code OSS build.
+
+## Build Pipeline Summary
+
+```
+npm run bootstrap    →  git clone/pull upstream vscode
+                     →  npm install (upstream, incremental)
+                     →  mkdir .build/{user-data,extensions}
+
+npm run dev          →  sync product overrides
+                     →  npm run compile (upstream)
+                     →  bash ./scripts/code.sh \
+                          --user-data-dir=.build/user-data \
+                          --extensions-dir=.build/extensions \
+                          --extensionDevelopmentPath=extensions/cytos-ml
+
+npm run build        →  sync product overrides
+                     →  npm run gulp -- vscode-linux-x64-min (upstream)
+```

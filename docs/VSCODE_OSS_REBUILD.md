@@ -11,11 +11,13 @@ This document describes how Envoy IDE is rebuilt on top of VS Code OSS.
 
 ## Pipeline
 
-Prerequisite: use the Node version required by upstream VS Code OSS (`.upstream/vscode/.nvmrc`).
+Prerequisite: use the same Node major version required by upstream VS Code OSS (`.upstream/vscode/.nvmrc`).
+
+Note: `apps/vscode-oss/scripts/bootstrap-vscode.mjs` automatically sets `VSCODE_SKIP_NODE_VERSION_CHECK=1` for same-major patch mismatches and sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` to avoid non-essential browser binary downloads.
 
 1. `npm run bootstrap -w apps/vscode-oss`
    - Clones or updates VS Code OSS under `.upstream/vscode`.
-   - Installs upstream dependencies when missing.
+   - Always runs upstream `npm install` (incremental/state-aware) to repair partial or stale dependency trees.
 2. `npm run sync -w apps/vscode-oss`
    - Applies product overrides.
 3. `npm run run -w apps/vscode-oss`

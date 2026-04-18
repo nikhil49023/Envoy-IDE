@@ -1,66 +1,171 @@
-# Runbook
+# Cytos IDE — Runbook
 
-## 1. Install desktop dependencies
+## Prerequisites
 
-- cd apps/desktop
-- npm install
+| Requirement | Notes |
+|---|---|
+| Node.js | Same major version as `.upstream/vscode/.nvmrc` (fetched after bootstrap). Use `nvm` or `asdf` to switch. |
+| Python 3.10+ | Required for `cytos_engine` workflows. |
+| Git | Required for upstream vscode clone. |
+| ~3 GB disk space | Upstream VS Code checkout + dependencies. |
 
-## 2. Run desktop app
+---
 
-- npm run dev
+## 1. First-time setup
 
-## 3. Python workflow engine
+```bash
+# Install root monorepo dependencies
+npm install
 
-The desktop runtime calls Python workflows with:
+# Clone upstream VS Code OSS and install its dependencies
+npm run bootstrap
+```
 
-- python3 -m axiom_engine.cli.main run --project-root <path> --workflow <name> --run-id <id> --config-json <json>
+`bootstrap` handles:
+- Cloning `microsoft/vscode` (shallow) into `apps/vscode-oss/.upstream/vscode`
+- Running `npm install` inside the upstream repository (incremental — fast on repeat runs)
+- Creating isolated `.build/user-data` and `.build/extensions` directories
+- Automatically sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`
+- Automatically sets `VSCODE_SKIP_NODE_VERSION_CHECK=1` for same-major Node patch mismatches
 
-For local shell testing:
+---
 
-- cd python
-- python3 -m pip install -e .
-- python3 -m axiom_engine.cli.main run --project-root .. --workflow evaluation --run-id demo-1 --config-json '{}'
+## 2. Launch Cytos IDE (development)
 
-## 4. Typical workflow
+```bash
+npm run dev
+```
 
-1. Open project folder in IDE.
-2. Open and edit files in Monaco.
-3. Trigger Evaluate/Export/Simulate from command bar.
-4. Watch logs and events in bottom panel.
-5. Inspect generated artifacts under .axiom/.
+This:
+1. Syncs `product.overrides.json` into upstream `product.json`
+2. Compiles upstream VS Code (`npm run compile` in upstream)
+3. Launches VS Code via `bash ./scripts/code.sh` with:
+   - `--user-data-dir` pointing to `.build/user-data` (isolated from your personal VS Code profile)
+   - `--extensions-dir` pointing to `.build/extensions`
+   - `--extensionDevelopmentPath` loading `extensions/cytos-ml` in dev mode
 
-Center workspace modes:
+---
 
-- Notebook mode: open .ipynb files with markdown/code cells, inline outputs, plots, and rich HTML/widget-like rendering.
-- Script mode: production-focused editor with script cell execution from # %% markers, test and debug command hooks.
-- Workflow mode: lifecycle dashboard for data, experiments, training, models, deployment, and monitoring.
+## 3. Build the Cytos ML extension only
 
-Inspector enhancements:
+If you only changed the extension and want to skip a full VS Code recompile:
 
-- Variable explorer populated from notebook/script cell execution.
-- Dataframe/data viewer with quick filtering and table preview.
+```bash
+# From repo root:
+npm install --prefix apps/vscode-oss/extensions/cytos-ml
+npm run build --prefix apps/vscode-oss/extensions/cytos-ml
+```
 
-## 6. Multi-format model inspection
+Or equivalently:
 
-Inspection workflow now scans project files and reports metadata for multiple model families, including ONNX, PyTorch archives, safetensors, GGUF, TFLite, Keras HDF5, CoreML packaging, and common weight containers.
+```bash
+npm run build:extension -w apps/vscode-oss
+```
 
-Generated artifacts:
+---
 
-- .axiom/artifacts/inspection-<run-id>.json
-- .axiom/artifacts/inspection-<run-id>.md
+## 4. Re-apply product overrides without recompiling
 
-Notes:
+```bash
+npm run sync
+```
 
-- If ONNX or HDF5 parser dependencies are unavailable, inspection still completes with file-level metadata and warnings.
-- Pickle/joblib payloads are intentionally not deserialized for safety.
+Use this after editing `product.overrides.json` if you don't want to recompile the full VS Code source.
 
-## 5. Integrated terminal
+---
 
-1. Open a project folder to auto-create a terminal session.
-2. Use the bottom panel input to send commands to the terminal.
-3. Use Stop to terminate the current terminal session.
+## 5. Build a distributable binary (Linux x64)
 
-Terminal backend behavior:
+```bash
+npm run build
+```
 
-- Preferred mode: node-pty for shell-like terminal behavior.
-- Fallback mode: child process streaming when PTY is not available.
+Calls the upstream `gulp vscode-linux-x64-min` target. Output appears under `apps/vscode-oss/.upstream/vscode/../VSCode-linux-x64/`.
+
+---
+
+## 6. Python workflow engine
+
+Install `cytos_engine` locally for CLI testing:
+
+```bash
+cd python
+pip install -e .
+```
+
+Run a workflow manually:
+
+```bash
+python3 -m cytos_engine.cli run \
+  --project-root /path/to/your/project \
+  --workflow evaluation \
+  --run-id test-run-1 \
+  --config-json '{}'
+```
+
+Supported `--workflow` values: `dataset_creation`, `evaluation`, `export`, `simulation`, `inspection`.
+
+---
+
+## 7. Using Cytos commands inside the IDE
+
+Open a project folder in Cytos, then via the command palette (`Ctrl+Shift+P`):
+
+| Command | Action |
+|---|---|
+| `Cytos: Open Workflow Dashboard` | Opens a webview with experiment tracker, dataset registry, artifact counts, reproducibility info |
+| `Cytos: Run Python Tests` | Runs `python3 -m pytest -q` in an integrated terminal |
+| `Cytos: Run Inspection Workflow` | Runs `python3 -m cytos_engine.cli run --workflow inspection` |
+
+The **Workflow Dashboard** reads `.cytos/metadata.db` in the open workspace folder. No sidecar server is needed — metadata is queried inline via a Python subprocess call from the extension.
+
+---
+
+## 8. Updating upstream VS Code
+
+```bash
+npm run bootstrap
+```
+
+`bootstrap` always fetches latest `main` from `microsoft/vscode` and runs `npm install` incrementally. Re-run `npm run dev` afterward to recompile.
+
+---
+
+## 9. Troubleshooting
+
+### Node version mismatch
+
+If bootstrap fails on a Node version error:
+
+```
+VS Code OSS requires a newer Node runtime for bootstrap.
+Required: 22.x.x
+Current: 20.x.x
+```
+
+Switch Node version with `nvm`:
+
+```bash
+nvm install 22
+nvm use 22
+npm run bootstrap
+```
+
+Same-major patch mismatches (e.g. 22.22.0 vs 22.22.1) are automatically bypassed.
+
+### Extension build failure
+
+```bash
+cd apps/vscode-oss/extensions/cytos-ml
+npm install
+npx tsc -p . --noEmit   # type-check only, no output
+npx tsc -p .             # full build
+```
+
+### Dashboard shows "No runs yet"
+
+The dashboard reads `.cytos/metadata.db` in the workspace root. This file is created automatically when you run a workflow. Run `Cytos: Run Inspection Workflow` to generate your first run record.
+
+### Python not found
+
+The extension tries `python3`, then `python`, then `py -3`. Ensure at least one is on your `$PATH` and resolves to Python 3.10+.

@@ -1,0 +1,78 @@
+/*
+  Envoy Deep Glassmorphic Shell Override
+  This CSS is aggressively injected into the core VS Code workbench
+  to break the traditional "code editor" layout and make it a unified Canvas.
+*/
+
+/* 1. Global Shell Translucency */
+.monaco-workbench {
+  background: radial-gradient(circle at top left, #120e24, #050510) !important;
+  color: #fafafa !important;
+}
+
+/* Base grid modifications to let through backgrounds */
+.monaco-workbench .part {
+  background-color: transparent !important;
+}
+
+.monaco-workbench .part.sidebar,
+.monaco-workbench .part.panel,
+.monaco-workbench .part.editor {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 16px !important;
+  margin: 12px !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden !important;
+}
+
+/* 2. Floating Title Bar */
+.monaco-workbench .part.titlebar {
+  background: rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 3. Disable distracting rigid borders between views */
+.monaco-sash {
+  background: transparent !important;
+}
+.monaco-sash:hover {
+  background: rgba(99, 102, 241, 0.5) !important;
+  transition: background 0.2s ease;
+}
+.monaco-workbench .part > .content {
+    border: none !important;
+}
+
+/* 4. Glassmorphic editor tabs (if shown) */
+.monaco-workbench .part.editor > .content .editor-group-container > .title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: none !important;
+  border-radius: 8px 8px 0 0 !important;
+  margin: 4px 4px 0 4px !important;
+}
+.monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-bottom: 2px solid #6366f1 !important;
+}
+
+/* 5. Terminal & Output panels */
+.monaco-workbench .part.panel > .content {
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 6. Typography Overrides */
+.monaco-workbench,
+.monaco-workbench .mac,
+.monaco-workbench .windows,
+.monaco-workbench .linux {
+  font-family: "Inter", "system-ui", "-apple-system", sans-serif !important;
+}

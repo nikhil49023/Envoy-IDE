@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 
 const root = resolve(process.cwd());
 const upstreamRoot = resolve(root, ".upstream", "vscode");
-const extensionDevPath = resolve(root, "extensions", "envoy-ml");
+const extensionDevPath = resolve(root, "extensions", "cytos-ml");
 const userDataDir = resolve(root, ".build", "user-data");
 const extensionsDir = resolve(root, ".build", "extensions");
 
@@ -19,7 +19,7 @@ function run(command, args, cwd = root) {
   }
 }
 
-run("node", ["./scripts/sync-envoy-layer.mjs"], root);
+run("node", ["./scripts/sync-cytos-layer.mjs"], root);
 run("npm", ["run", "compile"], upstreamRoot);
 run(
   "bash",
@@ -27,7 +27,8 @@ run(
     "./scripts/code.sh",
     `--user-data-dir=${userDataDir}`,
     `--extensions-dir=${extensionsDir}`,
-    `--extensionDevelopmentPath=${extensionDevPath}`
+    `--extensionDevelopmentPath=${extensionDevPath}`,
+    "--no-sandbox"
   ],
   upstreamRoot,
 );

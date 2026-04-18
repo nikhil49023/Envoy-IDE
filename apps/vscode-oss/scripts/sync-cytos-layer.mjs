@@ -21,3 +21,18 @@ const next = {
 
 writeFileSync(productPath, `${JSON.stringify(next, null, 2)}\n`, "utf-8");
 console.log("Applied Envoy product overrides to VS Code OSS.");
+
+// Inject deep CSS overrides
+const bespokeCssPath = resolve(root, "scripts", "envoy-shell.css");
+const upstreamCssPath = resolve(upstreamRoot, "src", "vs", "workbench", "browser", "media", "style.css");
+
+if (existsSync(bespokeCssPath) && existsSync(upstreamCssPath)) {
+  const customCss = readFileSync(bespokeCssPath, "utf-8");
+  const upstreamCss = readFileSync(upstreamCssPath, "utf-8");
+  
+  // To avoid duplicate injections on repeat runs, check if we already injected.
+  if (!upstreamCss.includes("Envoy Deep Glassmorphic Shell Override")) {
+    writeFileSync(upstreamCssPath, `${upstreamCss}\n\n${customCss}`, "utf-8");
+    console.log("Injected custom Envoy Shell CSS into upstream workbench.");
+  }
+}

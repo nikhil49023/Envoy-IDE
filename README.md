@@ -1,47 +1,83 @@
-# Envoy IDE
+# Cytos IDE
 
-Envoy IDE is now rebuilt cleanly on top of VS Code OSS.
+Cytos IDE is built directly on top of VS Code OSS. There is no custom Electron shell — Cytos is VS Code with product overrides applied and a first-party extension loaded.
 
-The primary app target in this repository is `apps/vscode-oss`, which:
+## Repository Layout
 
-- bootstraps upstream VS Code OSS from Microsoft
-- applies Envoy product overrides
-- loads the Envoy ML extension layer
-- runs with isolated user-data and extension directories
-
-## Monorepo Layout
-
-- `apps/vscode-oss`: VS Code OSS bootstrap, sync, run, and build pipeline
-- `apps/vscode-oss/extensions/envoy-ml`: first-party Envoy extension for ML commands/dashboard
-- `apps/desktop`: legacy custom Electron shell (kept for reference)
-- `python/axiom_engine`: workflow engine and local run metadata support
-- `packages`: shared types and domain modules
+```
+cytos-ide/
+├── apps/
+│   └── vscode-oss/                  # VS Code OSS integration layer
+│       ├── scripts/
+│       │   ├── bootstrap-vscode.mjs # Clone/update upstream VS Code OSS
+│       │   ├── sync-cytos-layer.mjs # Apply product.overrides.json
+│       │   ├── run-vscode.mjs       # Compile + launch with Cytos extension
+│       │   └── build-vscode.mjs     # Produce distributable Linux build
+│       ├── extensions/
+│       │   └── cytos-ml/            # First-party VS Code extension
+│       │       └── src/extension.ts # Commands, dashboard, ML metadata
+│       ├── product.overrides.json   # Branding & extension gallery config
+│       └── package.json
+├── packages/
+│   └── core-types/                  # Shared TypeScript types
+├── python/
+│   └── cytos_engine/                # Local ML workflow engine (Python)
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── RUNBOOK.md
+│   └── VSCODE_OSS_REBUILD.md
+└── package.json                     # Monorepo root
+```
 
 ## Quick Start
 
-1. Install Python 3.10+.
-2. Install the Node version required by upstream VS Code OSS (see `apps/vscode-oss/.upstream/vscode/.nvmrc` after first bootstrap; currently Node 22.22.1+).
-3. Bootstrap VS Code OSS and dependencies:
-   - `npm run bootstrap -w apps/vscode-oss`
-4. Launch Envoy on VS Code OSS:
-   - `npm run dev`
+### Prerequisites
+- **Node.js**: same major version as upstream VS Code OSS (see `.upstream/vscode/.nvmrc` after first bootstrap)
+- **Python 3.10+**: for `cytos_engine` workflows
+
+### 1. Bootstrap VS Code OSS
+
+```bash
+npm run bootstrap
+```
+
+This clones (or updates) `microsoft/vscode` into `apps/vscode-oss/.upstream/vscode` and installs all upstream dependencies. Playwright browser downloads are skipped.
+
+### 2. Launch Cytos IDE
+
+```bash
+npm run dev
+```
+
+This syncs product overrides, compiles upstream VS Code, and launches VS Code OSS with the `cytos-ml` extension loaded in development mode.
+
+### 3. Build for distribution
+
+```bash
+npm run build
+```
+
+Produces a distributable Linux x64 build via the upstream VS Code gulp pipeline.
 
 ## Root Scripts
 
-- `npm run dev`: runs the VS Code OSS Envoy entrypoint
-- `npm run build`: builds the VS Code OSS Linux target
-- `npm run dev:legacy`: runs the old custom Electron shell
-- `npm run build:legacy`: builds the old custom Electron shell
+| Command | Description |
+|---|---|
+| `npm run bootstrap` | Clone/update VS Code OSS upstream and install all deps |
+| `npm run dev` | Launch Cytos IDE (VS Code OSS + Cytos extension) |
+| `npm run build` | Build distributable Linux x64 binary |
+| `npm run sync` | Re-apply product overrides only (no recompile) |
 
-## Extension Commands
+## Command Palette (inside Cytos IDE)
 
-After launch, use the command palette:
-
-- `Envoy: Open Workflow Dashboard`
-- `Envoy: Run Python Tests`
-- `Envoy: Run Inspection Workflow`
+| Command | Description |
+|---|---|
+| `Cytos: Open Workflow Dashboard` | Open the ML experiment/dataset dashboard |
+| `Cytos: Run Python Tests` | Run `pytest` in an integrated terminal |
+| `Cytos: Run Inspection Workflow` | Run the model inspection workflow |
 
 ## Notes
 
-- Upstream VS Code OSS source is materialized under `apps/vscode-oss/.upstream/vscode` and ignored by git.
-- Envoy runtime metadata remains project-local under `.axiom`.
+- Upstream VS Code OSS source lives at `apps/vscode-oss/.upstream/vscode` — excluded from git (large, auto-fetched).
+- Runtime user data and extensions are isolated to `apps/vscode-oss/.build/` — also excluded from git.
+- Cytos project metadata is stored under `.cytos/` in each project root — excluded from git.

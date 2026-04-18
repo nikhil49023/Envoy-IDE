@@ -1,52 +1,54 @@
+# Node
 node_modules/
 .pnpm-store/
+
+# Build outputs
 dist/
 build/
 out/
+
+# Logs
 *.log
+
+# OS
 .DS_Store
-.vscode/
 
-apps/desktop/node_modules/
-apps/desktop/dist/
-apps/desktop/dist-electron/
-apps/desktop/.electron-vite/
-apps/desktop/renderer/dist/
+# VS Code workspace settings (keep .vscode/ committed for shared launch configs)
+# Remove this line if you want to commit your .vscode/ settings:
+# .vscode/
 
+# VS Code OSS upstream source and local build dirs (large, auto-generated)
+apps/vscode-oss/.upstream/
+apps/vscode-oss/.build/
+
+# Envoy ML extension build artifacts
+apps/vscode-oss/extensions/envoy-ml/node_modules/
+apps/vscode-oss/extensions/envoy-ml/dist/
+
+# Python
 .python-version
 .venv/
 venv/
 __pycache__/
 *.pyc
-.pytest_cache/
-
-.axiom/
-.code-review-graph/
-.cursor/
-.kiro/
-.opencode.json
-.mcp.json
-.claude/
-.venv/
-apps/api/.venv/
-apps/api/*.egg-info/
-apps/web/node_modules/
-apps/web/.next/
-apps/web/out/
-apps/web/.turbo/
-__pycache__/
-.pytest_cache/
-*.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Local project runtime data (excluded per-project, not globally)
+.axiom/
+
+# Secret / local env files
 .env
 .env.local
-apps/web/.env.local
-*.log
+
+# AI / editor-specific dirs (not committed)
+.cursor/
+.kiro/
+.claude/
+.opencode.json
+.mcp.json
 .code-review-graph/
-apps/api/.mypy_cache/
-apps/api/.ruff_cache/
-apps/vscode-oss/.upstream/
-apps/vscode-oss/.build/
-apps/vscode-oss/extensions/envoy-ml/node_modules/
-apps/vscode-oss/extensions/envoy-ml/dist/

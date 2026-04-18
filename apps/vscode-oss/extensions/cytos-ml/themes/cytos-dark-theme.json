@@ -1,0 +1,89 @@
+{
+  "name": "Cytos Dark Immersive",
+  "type": "dark",
+  "colors": {
+    "focusBorder": "#00000000",
+    "foreground": "#e2e8f0",
+    "widget.shadow": "#00000000",
+    "selection.background": "#6366f166",
+    "icon.foreground": "#94a3b8",
+    "window.activeBorder": "#00000000",
+    "window.inactiveBorder": "#00000000",
+    "button.background": "#4f46e5",
+    "button.foreground": "#ffffff",
+    "button.hoverBackground": "#6366f1",
+    "list.activeSelectionBackground": "#ffffff1a",
+    "list.inactiveSelectionBackground": "#ffffff0d",
+    "list.hoverBackground": "#ffffff0a",
+    "editor.background": "#00000000",
+    "editor.foreground": "#f8fafc",
+    "editor.lineHighlightBackground": "#ffffff0a",
+    "editorCursor.foreground": "#818cf8",
+    "editorWhitespace.foreground": "#ffffff1a",
+    "editorIndentGuide.background": "#ffffff1a",
+    "editorIndentGuide.activeBackground": "#ffffff4d",
+    "editorLineNumber.foreground": "#475569",
+    "editorLineNumber.activeForeground": "#94a3b8",
+    "sideBar.background": "#00000000",
+    "sideBar.foreground": "#cbd5e1",
+    "sideBarSectionHeader.background": "#00000000",
+    "activityBar.background": "#00000000",
+    "activityBar.foreground": "#e2e8f0",
+    "activityBarBadge.background": "#4f46e5",
+    "activityBarBadge.foreground": "#ffffff",
+    "statusBar.background": "#00000000",
+    "statusBar.foreground": "#94a3b8",
+    "statusBar.noFolderBackground": "#00000000",
+    "statusBar.debuggingBackground": "#00000000",
+    "titleBar.activeBackground": "#00000000",
+    "titleBar.activeForeground": "#e2e8f0",
+    "titleBar.inactiveBackground": "#00000000",
+    "titleBar.inactiveForeground": "#94a3b8",
+    "terminal.background": "#00000000",
+    "terminal.foreground": "#cbd5e1",
+    "panel.background": "#00000000",
+    "panel.border": "#00000000",
+    "panelTitle.activeBorder": "#4f46e5",
+    "panelTitle.activeForeground": "#f8fafc",
+    "panelTitle.inactiveForeground": "#94a3b8"
+  },
+  "tokenColors": [
+    {
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": {
+        "foreground": "#64748b",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "scope": ["keyword", "storage"],
+      "settings": {
+        "foreground": "#818cf8"
+      }
+    },
+    {
+      "scope": ["string", "string.quoted"],
+      "settings": {
+        "foreground": "#34d399"
+      }
+    },
+    {
+      "scope": ["entity.name.function", "support.function"],
+      "settings": {
+        "foreground": "#38bdf8"
+      }
+    },
+    {
+      "scope": ["variable", "entity.name.variable"],
+      "settings": {
+        "foreground": "#f8fafc"
+      }
+    },
+    {
+      "scope": ["constant.numeric", "constant.language"],
+      "settings": {
+        "foreground": "#fb923c"
+      }
+    }
+  ]
+}

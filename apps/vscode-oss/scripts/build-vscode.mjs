@@ -16,5 +16,5 @@ function run(command, args, cwd = root) {
   }
 }
 
-run("node", ["./scripts/sync-envoy-layer.mjs"], root);
+run("node", ["./scripts/sync-cytos-layer.mjs"], root);
 run("npm", ["run", "gulp", "--", "vscode-linux-x64-min"], upstreamRoot);

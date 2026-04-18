@@ -1,16 +1,18 @@
 {
-  "name": "envoy-ide-monorepo",
+  "name": "cytos-ide-monorepo",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
     "apps/vscode-oss",
-    "apps/desktop",
-    "packages/*"
+    "packages/core-types"
   ],
   "scripts": {
+    "bootstrap": "npm run bootstrap -w apps/vscode-oss",
     "dev": "npm run run -w apps/vscode-oss",
-    "build": "npm run build -w apps/vscode-oss",
-    "dev:legacy": "npm run dev -w apps/desktop",
-    "build:legacy": "npm run build -w apps/desktop"
+    "build:extension": "npm run build:extension -w apps/vscode-oss",
+    "sync": "npm run sync -w apps/vscode-oss"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

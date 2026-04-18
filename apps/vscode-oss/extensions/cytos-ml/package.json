@@ -1,0 +1,113 @@
+{
+  "name": "cytos-ml",
+  "displayName": "Cytos ML Toolkit",
+  "description": "ML workflow commands and dashboard for Cytos IDE on top of VS Code OSS.",
+  "publisher": "cytos",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cytos-explorer",
+          "title": "Cytos",
+          "icon": "media/cytos-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cytos-explorer": [
+        {
+          "id": "cytos-home",
+          "name": "Home",
+          "icon": "$(home)"
+        },
+        {
+          "id": "cytos-data",
+          "name": "Data",
+          "icon": "$(database)"
+        },
+        {
+          "id": "cytos-workflows",
+          "name": "Workflows",
+          "icon": "$(circuit-board)"
+        },
+        {
+          "id": "cytos-runs",
+          "name": "Runs",
+          "icon": "$(play)"
+        },
+        {
+          "id": "cytos-models",
+          "name": "Models",
+          "icon": "$(box)"
+        },
+        {
+          "id": "cytos-registry",
+          "name": "Registry",
+          "icon": "$(archive)"
+        },
+        {
+          "id": "cytos-deployments",
+          "name": "Deployments",
+          "icon": "$(cloud-upload)"
+        },
+        {
+          "id": "cytos-monitoring",
+          "name": "Monitoring",
+          "icon": "$(graph)"
+        },
+        {
+          "id": "cytos-alerts",
+          "name": "Alerts",
+          "icon": "$(bell)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "cytos.openWorkflowCanvas",
+        "title": "Cytos: Open Workflow Canvas",
+        "icon": "$(paintcan)"
+      },
+      {
+        "command": "cytos.runPytest",
+        "title": "Cytos: Run Python Tests"
+      },
+      {
+        "command": "cytos.runInspectionWorkflow",
+        "title": "Cytos: Run Inspection Workflow"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cytos.openWorkflowCanvas",
+          "when": "view == cytos-workflows",
+          "group": "navigation"
+        }
+      ]
+    },
+    "themes": [
+      {
+        "label": "Cytos Dark Immersive",
+        "uiTheme": "vs-dark",
+        "path": "./themes/cytos-dark-theme.json"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}

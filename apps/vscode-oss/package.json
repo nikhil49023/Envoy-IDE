@@ -1,12 +1,12 @@
 {
-  "name": "envoy-vscode-oss",
+  "name": "cytos-vscode-oss",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "bootstrap": "node ./scripts/bootstrap-vscode.mjs",
-    "sync": "node ./scripts/sync-envoy-layer.mjs",
-    "build:extension": "npm install --prefix ./extensions/envoy-ml && npm run build --prefix ./extensions/envoy-ml",
+    "sync": "node ./scripts/sync-cytos-layer.mjs",
+    "build:extension": "npm install --prefix ./extensions/cytos-ml && npm run build --prefix ./extensions/cytos-ml",
     "build": "npm run bootstrap && npm run build:extension && node ./scripts/build-vscode.mjs",
     "run": "npm run bootstrap && npm run build:extension && node ./scripts/run-vscode.mjs"
   }

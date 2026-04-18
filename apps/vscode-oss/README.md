@@ -15,6 +15,9 @@ This workspace rebuilds Envoy IDE on top of VS Code OSS instead of the custom El
 - `npm run run -w apps/vscode-oss`
 - `npm run build -w apps/vscode-oss`
 
+Bootstrap always runs upstream `npm install` and relies on VS Code's install-state checks,
+so repeat runs are incremental while also repairing partial installs.
+
 ## Output
 
 VS Code build artifacts are produced by upstream gulp targets inside `.upstream/vscode`.
