@@ -28,3 +28,14 @@ For local shell testing:
 3. Trigger Evaluate/Export/Simulate from command bar.
 4. Watch logs and events in bottom panel.
 5. Inspect generated artifacts under .axiom/.
+
+## 5. Integrated terminal
+
+1. Open a project folder to auto-create a terminal session.
+2. Use the bottom panel input to send commands to the terminal.
+3. Use Stop to terminate the current terminal session.
+
+Terminal backend behavior:
+
+- Preferred mode: node-pty for shell-like terminal behavior.
+- Fallback mode: child process streaming when PTY is not available.

@@ -34,8 +34,15 @@ Python workflow runs are launched by the desktop runtime using `python3 -m axiom
 - Multi-pane IDE shell (left explorer, center Monaco, right inspector, bottom terminal/logs, top command bar)
 - Folder open, file read/write, tabs, dirty tracking hooks
 - Integrated run command execution with live stdout/stderr events
+- Integrated terminal sessions with PTY support (node-pty) and fallback shell mode
 - Workflow run execution with event-streamed lifecycle and artifact metadata
 - Project-local `.axiom/metadata.db` run registry
+
+## Terminal Notes
+
+- Terminal sessions are created when a project folder is opened.
+- The bottom panel accepts interactive commands and streams output live.
+- If PTY support is unavailable on a host, Envoy falls back to a standard shell process.
 
 ## Next Steps
 

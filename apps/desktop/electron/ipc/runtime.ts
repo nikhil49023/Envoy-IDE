@@ -1,15 +1,58 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
+import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import {
+  spawn,
+  type ChildProcessWithoutNullStreams,
+} from "node:child_process";
 
 import type { FileNode, RuntimeEvent } from "@core-types/index";
 
 const activeRuns = new Map<string, ChildProcessWithoutNullStreams>();
 
+type PtyLikeProcess = {
+  write: (data: string) => void;
+  resize: (cols: number, rows: number) => void;
+  kill: () => void;
+  onData: (cb: (data: string) => void) => void;
+  onExit: (cb: (event: { exitCode: number }) => void) => void;
+};
+
+type TerminalSession = {
+  mode: "pty" | "fallback";
+  pty?: PtyLikeProcess;
+  child?: ChildProcessWithoutNullStreams;
+};
+
+const terminalSessions = new Map<string, TerminalSession>();
+
+const require = createRequire(import.meta.url);
+
+function getNodePty(): null | {
+  spawn: (
+    file: string,
+    args: string[],
+    options: { cwd: string; cols: number; rows: number; env: Record<string, string> },
+  ) => PtyLikeProcess;
+} {
+  try {
+    return require("node-pty");
+  } catch {
+    return null;
+  }
+}
+
 function emitRuntimeEvent(window: BrowserWindow, event: RuntimeEvent) {
   window.webContents.send("envoy:runtime-event", event);
+}
+
+function emitTerminalEvent(
+  window: BrowserWindow,
+  payload: { terminalId: string; type: "data" | "exit" | "error"; data?: string; code?: number },
+) {
+  window.webContents.send("envoy:terminal-event", payload);
 }
 
 async function buildTree(rootPath: string, depth = 0): Promise<FileNode[]> {
@@ -133,6 +176,90 @@ function startStreamingProcess(
   });
 }
 
+function createTerminalSession(window: BrowserWindow, terminalId: string, cwd: string): TerminalSession {
+  const shell = process.env.SHELL || (process.platform === "win32" ? "powershell.exe" : "bash");
+  const nodePty = getNodePty();
+
+  if (nodePty) {
+    const ptyProc = nodePty.spawn(shell, [], {
+      cwd,
+      cols: 120,
+      rows: 32,
+      env: {
+        ...process.env,
+      } as Record<string, string>,
+    });
+
+    ptyProc.onData((data) => {
+      emitTerminalEvent(window, {
+        terminalId,
+        type: "data",
+        data,
+      });
+    });
+
+    ptyProc.onExit((event) => {
+      emitTerminalEvent(window, {
+        terminalId,
+        type: "exit",
+        code: event.exitCode,
+      });
+      terminalSessions.delete(terminalId);
+    });
+
+    return {
+      mode: "pty",
+      pty: ptyProc,
+    };
+  }
+
+  const child = spawn(shell, [], {
+    cwd,
+    stdio: ["pipe", "pipe", "pipe"],
+    env: {
+      ...process.env,
+    },
+  });
+
+  child.stdout.on("data", (chunk) => {
+    emitTerminalEvent(window, {
+      terminalId,
+      type: "data",
+      data: chunk.toString(),
+    });
+  });
+
+  child.stderr.on("data", (chunk) => {
+    emitTerminalEvent(window, {
+      terminalId,
+      type: "data",
+      data: chunk.toString(),
+    });
+  });
+
+  child.on("error", (error) => {
+    emitTerminalEvent(window, {
+      terminalId,
+      type: "error",
+      data: error.message,
+    });
+  });
+
+  child.on("close", (code) => {
+    emitTerminalEvent(window, {
+      terminalId,
+      type: "exit",
+      code: code ?? 0,
+    });
+    terminalSessions.delete(terminalId);
+  });
+
+  return {
+    mode: "fallback",
+    child,
+  };
+}
+
 export function registerRuntimeIpc(window: BrowserWindow) {
   ipcMain.handle("envoy:open-folder", async () => {
     const result = await dialog.showOpenDialog(window, {
@@ -205,6 +332,64 @@ export function registerRuntimeIpc(window: BrowserWindow) {
     }
     processRef.kill("SIGTERM");
     activeRuns.delete(runId);
+    return true;
+  });
+
+  ipcMain.handle("envoy:terminal-create", async (_event, projectRoot: string) => {
+    const terminalId = randomUUID();
+    const session = createTerminalSession(window, terminalId, projectRoot);
+    terminalSessions.set(terminalId, session);
+    return terminalId;
+  });
+
+  ipcMain.handle("envoy:terminal-write", async (_event, terminalId: string, data: string) => {
+    const session = terminalSessions.get(terminalId);
+    if (!session) {
+      return false;
+    }
+
+    if (session.mode === "pty" && session.pty) {
+      session.pty.write(data);
+      return true;
+    }
+
+    if (session.child && session.child.stdin.writable) {
+      session.child.stdin.write(data);
+      return true;
+    }
+
+    return false;
+  });
+
+  ipcMain.handle(
+    "envoy:terminal-resize",
+    async (_event, terminalId: string, cols: number, rows: number) => {
+      const session = terminalSessions.get(terminalId);
+      if (!session) {
+        return false;
+      }
+
+      if (session.mode === "pty" && session.pty) {
+        session.pty.resize(cols, rows);
+      }
+
+      return true;
+    },
+  );
+
+  ipcMain.handle("envoy:terminal-kill", async (_event, terminalId: string) => {
+    const session = terminalSessions.get(terminalId);
+    if (!session) {
+      return false;
+    }
+
+    if (session.mode === "pty" && session.pty) {
+      session.pty.kill();
+    } else if (session.child) {
+      session.child.kill("SIGTERM");
+    }
+
+    terminalSessions.delete(terminalId);
     return true;
   });
 }
