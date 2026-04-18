@@ -13,6 +13,7 @@ import { XtermViewport } from "./terminal/XtermViewport";
 type ActivityView = "explorer" | "workflows";
 type BottomView = "terminal" | "events";
 type ThemePreset = "aurora" | "graphite" | "ember";
+type LayoutPreset = "balanced" | "focus" | "analysis" | "wide";
 type DragTarget = "left" | "right" | "bottom";
 
 type DragState = {
@@ -30,6 +31,7 @@ type TerminalChunk = {
 };
 
 const STORAGE_THEME_KEY = "envoy-ui-theme";
+const STORAGE_LAYOUT_KEY = "envoy-ui-layout";
 
 const WORKFLOW_OPTIONS = [
   { id: "evaluation", label: "Evaluation" },
@@ -64,6 +66,13 @@ export function App() {
     }
     return "aurora";
   });
+  const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>(() => {
+    const stored = window.localStorage.getItem(STORAGE_LAYOUT_KEY);
+    if (stored === "balanced" || stored === "focus" || stored === "analysis" || stored === "wide") {
+      return stored;
+    }
+    return "balanced";
+  });
   const [leftPaneWidth, setLeftPaneWidth] = useState(280);
   const [rightPaneWidth, setRightPaneWidth] = useState(300);
   const [bottomPaneHeight, setBottomPaneHeight] = useState(270);
@@ -73,6 +82,35 @@ export function App() {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(STORAGE_THEME_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_LAYOUT_KEY, layoutPreset);
+
+    if (layoutPreset === "focus") {
+      setLeftPaneWidth(240);
+      setRightPaneWidth(250);
+      setBottomPaneHeight(220);
+      return;
+    }
+
+    if (layoutPreset === "analysis") {
+      setLeftPaneWidth(320);
+      setRightPaneWidth(360);
+      setBottomPaneHeight(320);
+      return;
+    }
+
+    if (layoutPreset === "wide") {
+      setLeftPaneWidth(360);
+      setRightPaneWidth(280);
+      setBottomPaneHeight(260);
+      return;
+    }
+
+    setLeftPaneWidth(280);
+    setRightPaneWidth(300);
+    setBottomPaneHeight(270);
+  }, [layoutPreset]);
 
   useEffect(() => {
     const disposeRuntime = window.envoy.onRuntimeEvent((payload) => {
@@ -383,6 +421,12 @@ export function App() {
         setTheme={(value) => {
           if (value === "aurora" || value === "graphite" || value === "ember") {
             setTheme(value);
+          }
+        }}
+        layoutPreset={layoutPreset}
+        setLayoutPreset={(value) => {
+          if (value === "balanced" || value === "focus" || value === "analysis" || value === "wide") {
+            setLayoutPreset(value);
           }
         }}
       />

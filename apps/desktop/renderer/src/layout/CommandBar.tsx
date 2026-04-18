@@ -7,6 +7,8 @@ type CommandBarProps = {
   projectRoot: string | null;
   theme: string;
   setTheme: (value: string) => void;
+  layoutPreset: string;
+  setLayoutPreset: (value: string) => void;
 };
 
 export function CommandBar({
@@ -18,6 +20,8 @@ export function CommandBar({
   projectRoot,
   theme,
   setTheme,
+  layoutPreset,
+  setLayoutPreset,
 }: CommandBarProps) {
   const projectName = projectRoot?.split(/[\\/]/).filter(Boolean).pop() ?? "No project open";
 
@@ -56,6 +60,21 @@ export function CommandBar({
           <option value="aurora">Aurora Glass</option>
           <option value="graphite">Graphite Mist</option>
           <option value="ember">Ember Lux</option>
+        </select>
+      </label>
+
+      <label className="theme-select-wrap" htmlFor="layout-select">
+        Layout
+        <select
+          id="layout-select"
+          className="theme-select"
+          value={layoutPreset}
+          onChange={(event) => setLayoutPreset(event.target.value)}
+        >
+          <option value="balanced">Balanced</option>
+          <option value="focus">Focus</option>
+          <option value="analysis">Analysis</option>
+          <option value="wide">Wide</option>
         </select>
       </label>
 
