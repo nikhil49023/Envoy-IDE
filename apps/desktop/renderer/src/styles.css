@@ -522,6 +522,45 @@ select {
   gap: 10px;
 }
 
+.workflow-generated-at {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.workflow-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workflow-kpi-card {
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 10px;
+  background: rgba(12, 20, 30, 0.45);
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.workflow-kpi-card h4 {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-soft);
+}
+
+.workflow-kpi-card strong {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.workflow-kpi-card p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
 .platform-section-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -545,6 +584,12 @@ select {
   font-size: 11px;
   color: var(--text-soft);
   line-height: 1.4;
+}
+
+.workflow-registry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .workflow-bottom-grid {
@@ -575,6 +620,107 @@ select {
 .workflow-module-card p {
   margin: 8px 0 0 0;
   color: var(--text-soft);
+  font-size: 11px;
+}
+
+.workflow-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(112, 142, 176, 0.2);
+  border-radius: 8px;
+  background: rgba(8, 14, 22, 0.35);
+}
+
+.workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.workflow-table th,
+.workflow-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(112, 142, 176, 0.12);
+  white-space: nowrap;
+}
+
+.workflow-table th {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: rgba(11, 22, 33, 0.6);
+}
+
+.workflow-table tbody tr:hover {
+  background: rgba(54, 96, 136, 0.12);
+}
+
+.workflow-table.compact td,
+.workflow-table.compact th {
+  padding: 5px 7px;
+}
+
+.run-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 152, 178, 0.28);
+  padding: 2px 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.run-status.ok {
+  color: #b8f4cf;
+  border-color: rgba(92, 181, 123, 0.45);
+  background: rgba(39, 107, 62, 0.24);
+}
+
+.run-status.failed {
+  color: #ffc2b9;
+  border-color: rgba(219, 98, 85, 0.45);
+  background: rgba(118, 42, 38, 0.24);
+}
+
+.run-status.running {
+  color: #bfebff;
+  border-color: rgba(92, 173, 214, 0.45);
+  background: rgba(33, 82, 115, 0.24);
+}
+
+.run-status.cancelled,
+.run-status.neutral {
+  color: #ddd8c1;
+  border-color: rgba(165, 161, 128, 0.35);
+  background: rgba(84, 79, 45, 0.24);
+}
+
+.compare-run-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.compare-run-card {
+  border: 1px solid rgba(140, 170, 201, 0.2);
+  border-radius: 8px;
+  background: rgba(13, 24, 34, 0.56);
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.compare-run-card h5 {
+  margin: 0;
+  font-size: 11px;
+}
+
+.compare-run-card p {
+  margin: 0;
   font-size: 11px;
 }
 
@@ -1252,6 +1398,18 @@ select {
   .workflow-bottom-grid {
     grid-template-columns: 1fr;
   }
+
+  .workflow-registry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compare-run-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -1285,6 +1443,10 @@ select {
     gap: 4px 12px;
     padding-top: 4px;
     padding-bottom: 4px;
+  }
+
+  .workflow-metrics-grid {
+    grid-template-columns: 1fr;
   }
 }
 

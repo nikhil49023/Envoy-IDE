@@ -53,6 +53,50 @@ type PythonExecutionResult = {
   html_outputs: string[];
 };
 
+type MlRunSummary = {
+  run_id: string;
+  workflow: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  summary: string | null;
+  duration_seconds: number | null;
+};
+
+type MlDatasetSummary = {
+  name: string;
+  path: string;
+  extension: string;
+  size_mb: number;
+  modified_at: string;
+  checksum_sha256: string;
+};
+
+type MlMetadataState = {
+  generated_at: string;
+  runs: MlRunSummary[];
+  datasets: MlDatasetSummary[];
+  artifacts: {
+    models: number;
+    reports: number;
+    checkpoints: number;
+    embeddings: number;
+  };
+  experiment_metrics: {
+    total_runs: number;
+    running: number;
+    succeeded: number;
+    failed: number;
+    cancelled: number;
+  };
+  reproducibility: {
+    python_version: string;
+    platform: string;
+    dependency_lock_present: boolean;
+    env_files: string[];
+  };
+};
+
 const require = createRequire(import.meta.url);
 
 function getNodePty(): null | {
@@ -385,6 +429,236 @@ print(json.dumps(result))
   });
 }
 
+function emptyMlMetadataState(overrides?: Partial<MlMetadataState["reproducibility"]>): MlMetadataState {
+  return {
+    generated_at: new Date().toISOString(),
+    runs: [],
+    datasets: [],
+    artifacts: {
+      models: 0,
+      reports: 0,
+      checkpoints: 0,
+      embeddings: 0,
+    },
+    experiment_metrics: {
+      total_runs: 0,
+      running: 0,
+      succeeded: 0,
+      failed: 0,
+      cancelled: 0,
+    },
+    reproducibility: {
+      python_version: "unknown",
+      platform: "unknown",
+      dependency_lock_present: false,
+      env_files: [],
+      ...overrides,
+    },
+  };
+}
+
+function queryMlMetadata(projectRoot: string): Promise<MlMetadataState> {
+  return new Promise((resolve) => {
+    const script = String.raw`
+import hashlib
+import json
+import os
+import platform
+import sqlite3
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+axiom = root / ".axiom"
+db_path = axiom / "metadata.db"
+datasets_dir = axiom / "datasets"
+artifacts_dir = axiom / "artifacts"
+
+result = {
+    "generated_at": datetime.now(timezone.utc).isoformat(),
+    "runs": [],
+    "datasets": [],
+    "artifacts": {
+        "models": 0,
+        "reports": 0,
+        "checkpoints": 0,
+        "embeddings": 0,
+    },
+    "experiment_metrics": {
+        "total_runs": 0,
+        "running": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+    },
+    "reproducibility": {
+        "python_version": sys.version.split()[0],
+        "platform": platform.platform(),
+        "dependency_lock_present": False,
+        "env_files": [],
+    },
+}
+
+if db_path.exists():
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT run_id, workflow, status, started_at, completed_at, summary
+        FROM runs
+        ORDER BY started_at DESC
+        LIMIT 200
+        """
+    ).fetchall()
+    conn.close()
+
+    for row in rows:
+        started = row["started_at"]
+        completed = row["completed_at"]
+        duration = None
+        if started and completed:
+            try:
+                start_dt = datetime.fromisoformat(started)
+                end_dt = datetime.fromisoformat(completed)
+                duration = max(0.0, (end_dt - start_dt).total_seconds())
+            except Exception:
+                duration = None
+
+        result["runs"].append(
+            {
+                "run_id": row["run_id"],
+                "workflow": row["workflow"],
+                "status": row["status"],
+                "started_at": started,
+                "completed_at": completed,
+                "summary": row["summary"],
+                "duration_seconds": round(duration, 3) if isinstance(duration, float) else None,
+            }
+        )
+
+for run in result["runs"]:
+    status = str(run.get("status", "")).lower()
+    if status == "running":
+        result["experiment_metrics"]["running"] += 1
+    elif status == "success":
+        result["experiment_metrics"]["succeeded"] += 1
+    elif status == "failed":
+        result["experiment_metrics"]["failed"] += 1
+    elif status == "cancelled":
+        result["experiment_metrics"]["cancelled"] += 1
+
+result["experiment_metrics"]["total_runs"] = len(result["runs"])
+
+if datasets_dir.exists():
+    files = []
+    for current, _, names in os.walk(datasets_dir):
+        for name in names:
+            files.append(Path(current) / name)
+
+    files = sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)[:120]
+
+    for file_path in files:
+        stat = file_path.stat()
+        digest = hashlib.sha256()
+        with file_path.open("rb") as fp:
+            digest.update(fp.read(512 * 1024))
+        result["datasets"].append(
+            {
+                "name": file_path.name,
+                "path": str(file_path),
+                "extension": file_path.suffix.lower(),
+                "size_mb": round(stat.st_size / (1024 * 1024), 4),
+                "modified_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+                "checksum_sha256": digest.hexdigest(),
+            }
+        )
+
+if artifacts_dir.exists():
+    for current, _, names in os.walk(artifacts_dir):
+        for name in names:
+            lower = name.lower()
+            if lower.endswith((".onnx", ".gguf", ".pt", ".pth", ".safetensors", ".ckpt")):
+                result["artifacts"]["models"] += 1
+            if lower.endswith((".md", ".json", ".yaml", ".yml", ".txt", ".csv")):
+                result["artifacts"]["reports"] += 1
+            if "checkpoint" in lower or lower.endswith((".ckpt", ".pt", ".pth")):
+                result["artifacts"]["checkpoints"] += 1
+            if "embedding" in lower or lower.endswith((".npy", ".npz")):
+                result["artifacts"]["embeddings"] += 1
+
+lock_names = [
+    "requirements.txt",
+    "poetry.lock",
+    "Pipfile.lock",
+    "uv.lock",
+    "conda-lock.yml",
+    "environment.yml",
+    "environment.yaml",
+]
+result["reproducibility"]["dependency_lock_present"] = any((root / name).exists() for name in lock_names)
+
+env_candidates = [
+    ".env",
+    ".env.local",
+    "environment.yml",
+    "environment.yaml",
+    "requirements.txt",
+    "pyproject.toml",
+]
+result["reproducibility"]["env_files"] = [name for name in env_candidates if (root / name).exists()]
+
+print(json.dumps(result))
+`;
+
+    const child = spawn(process.env.PYTHON_BIN ?? "python3", ["-c", script, projectRoot], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        PYTHONPATH: pythonPathEnv(),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let out = "";
+    let err = "";
+    let settled = false;
+
+    const settle = (payload: MlMetadataState) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(payload);
+    };
+
+    child.stdout.on("data", (chunk) => {
+      out += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      err += chunk.toString();
+    });
+
+    child.on("error", () => {
+      settle(emptyMlMetadataState());
+    });
+
+    child.on("close", () => {
+      try {
+        const parsed = JSON.parse(out.trim()) as MlMetadataState;
+        settle(parsed);
+      } catch {
+        settle(
+          emptyMlMetadataState({
+            platform: err ? `error: ${err.slice(0, 120)}` : "unknown",
+          }),
+        );
+      }
+    });
+  });
+}
+
 function createTerminalSession(window: BrowserWindow, terminalId: string, cwd: string): TerminalSession {
   const shell = process.env.SHELL || (process.platform === "win32" ? "powershell.exe" : "bash");
   const nodePty = getNodePty();
@@ -550,6 +824,10 @@ export function registerRuntimeIpc(window: BrowserWindow) {
       return runPythonSnippet(projectRoot, code);
     },
   );
+
+  ipcMain.handle("envoy:query-ml-state", async (_event, projectRoot: string) => {
+    return queryMlMetadata(projectRoot);
+  });
 
   ipcMain.handle("envoy:terminal-create", async (_event, projectRoot: string) => {
     const terminalId = randomUUID();

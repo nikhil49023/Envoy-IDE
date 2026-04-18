@@ -1,4 +1,5 @@
 import type { FileNode } from "@core-types/index";
+import type { MlMetadataState } from "./workbench/mlState";
 
 type PythonExecutionResult = {
   stdout: string;
@@ -29,6 +30,7 @@ declare global {
         config: Record<string, unknown>,
       ) => Promise<string>;
       executePython: (projectRoot: string, code: string) => Promise<PythonExecutionResult>;
+      queryMlState: (projectRoot: string) => Promise<MlMetadataState>;
       stopRun: (runId: string) => Promise<boolean>;
       createTerminal: (projectRoot: string) => Promise<string>;
       writeTerminal: (terminalId: string, data: string) => Promise<boolean>;

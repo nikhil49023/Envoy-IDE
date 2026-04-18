@@ -13,6 +13,7 @@ import { TerminalPanel } from "./terminal/TerminalPanel";
 import { XtermViewport } from "./terminal/XtermViewport";
 import { NotebookWorkspace } from "./workbench/NotebookWorkspace";
 import { WorkflowWorkspace } from "./workbench/WorkflowWorkspace";
+import type { MlMetadataState } from "./workbench/mlState";
 
 type ActivityView = "explorer" | "workflows";
 type BottomView = "terminal" | "events";
@@ -181,6 +182,8 @@ export function App() {
   const [bottomView, setBottomView] = useState<BottomView>("terminal");
   const [centerMode, setCenterMode] = useState<CenterMode>("script");
   const [latestExecution, setLatestExecution] = useState<PythonExecutionResult | null>(null);
+  const [mlState, setMlState] = useState<MlMetadataState | null>(null);
+  const [isMlStateLoading, setIsMlStateLoading] = useState(false);
   const [theme, setTheme] = useState<ThemePreset>(() => {
     const stored = window.localStorage.getItem(STORAGE_THEME_KEY);
     if (stored === "graphite" || stored === "ember" || stored === "aurora") {
@@ -246,6 +249,37 @@ export function App() {
     setBottomPaneHeight(270);
   }, [layoutPreset]);
 
+  const refreshMlState = useCallback(
+    async (rootOverride?: string) => {
+      const root = rootOverride ?? projectRoot;
+      if (!root) {
+        setMlState(null);
+        setIsMlStateLoading(false);
+        return;
+      }
+
+      setIsMlStateLoading(true);
+      try {
+        const next = await window.envoy.queryMlState(root);
+        setMlState(next);
+      } catch {
+        setRuntimeLogs((prev) => [...prev.slice(-300), "Unable to refresh ML metadata state."]);
+      } finally {
+        setIsMlStateLoading(false);
+      }
+    },
+    [projectRoot],
+  );
+
+  useEffect(() => {
+    if (!projectRoot) {
+      setMlState(null);
+      setIsMlStateLoading(false);
+      return;
+    }
+    void refreshMlState(projectRoot);
+  }, [projectRoot, refreshMlState]);
+
   useEffect(() => {
     const disposeRuntime = window.envoy.onRuntimeEvent((payload) => {
       const line = JSON.stringify(payload);
@@ -254,12 +288,17 @@ export function App() {
       if (typeof runId === "string") {
         setLatestRunId(runId);
       }
+
+      const eventName = typeof payload.event === "string" ? payload.event : "";
+      if (eventName.startsWith("run_")) {
+        void refreshMlState();
+      }
     });
 
     return () => {
       disposeRuntime();
     };
-  }, []);
+  }, [refreshMlState]);
 
   useEffect(() => {
     const disposeTerminal = window.envoy.onTerminalEvent((payload) => {
@@ -551,6 +590,7 @@ export function App() {
       `Terminal ready: ${createdTerminalId}`,
       "Type a command in the prompt below and press Enter.",
     ]);
+    void refreshMlState(folder);
   }
 
   async function handleOpenFile(path: string) {
@@ -601,6 +641,7 @@ export function App() {
     });
     setLatestRunId(runId);
     setRuntimeLogs((prev) => [...prev.slice(-300), `Workflow started: ${workflow} (${runId})`]);
+    void refreshMlState(projectRoot);
   }
 
   async function runCustomCommand() {
@@ -621,6 +662,7 @@ export function App() {
     const runId = await window.envoy.runCommand(projectRoot, command, args);
     setLatestRunId(runId);
     setRuntimeLogs((prev) => [...prev.slice(-300), `Command started: ${commandInput} (${runId})`]);
+    void refreshMlState(projectRoot);
   }
 
   async function runProjectCommand(rawCommand: string) {
@@ -637,6 +679,7 @@ export function App() {
     const runId = await window.envoy.runCommand(projectRoot, parts[0], parts.slice(1));
     setLatestRunId(runId);
     setRuntimeLogs((prev) => [...prev.slice(-300), `Command started: ${rawCommand} (${runId})`]);
+    void refreshMlState(projectRoot);
   }
 
   async function executePythonSnippet(code: string): Promise<PythonExecutionResult | null> {
@@ -906,7 +949,14 @@ export function App() {
             </div>
 
             {centerMode === "workflow" ? (
-              <WorkflowWorkspace onRunWorkflow={runWorkflow} />
+              <WorkflowWorkspace
+                onRunWorkflow={runWorkflow}
+                mlState={mlState}
+                mlLoading={isMlStateLoading}
+                onRefresh={() => {
+                  void refreshMlState();
+                }}
+              />
             ) : null}
 
             {centerMode === "notebook" ? (
