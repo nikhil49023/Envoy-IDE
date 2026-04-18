@@ -6,8 +6,8 @@ type InspectorPanelProps = {
 
 export function InspectorPanel({ projectRoot, activeFilePath, latestRunId }: InspectorPanelProps) {
   return (
-    <section className="panel inspector-panel">
-      <h3>Inspector</h3>
+    <section className="panel inspector-panel glass-panel">
+      <h3 className="panel-title">Inspector</h3>
       <div className="inspector-item">
         <label>Project Root</label>
         <p>{projectRoot ?? "Not opened"}</p>
