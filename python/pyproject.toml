@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "axiom-engine"
+name = "cytos-engine"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
@@ -14,4 +14,4 @@ dependencies = [
 package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-include = ["axiom_engine*"]
+include = ["cytos_engine*"]

@@ -55,8 +55,7 @@ if (!existsSync(upstreamRoot)) {
   run("git", ["-C", upstreamRoot, "restore", "."]);
   run("git", ["-C", upstreamRoot, "clean", "-fd"]);
   run("git", ["-C", upstreamRoot, "fetch", "--depth", "1", "origin", "main"]);
-  run("git", ["-C", upstreamRoot, "checkout", "main"]);
-  run("git", ["-C", upstreamRoot, "pull", "--ff-only", "origin", "main"]);
+  run("git", ["-C", upstreamRoot, "checkout", "-B", "main", "FETCH_HEAD"]);
 }
 
 const requiredNodeVersion = readFileSync(resolve(upstreamRoot, ".nvmrc"), "utf-8").trim();

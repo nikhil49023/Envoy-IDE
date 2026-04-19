@@ -113,11 +113,12 @@ Open a project folder in Cytos, then via the command palette (`Ctrl+Shift+P`):
 
 | Command | Action |
 |---|---|
-| `Cytos: Open Workflow Dashboard` | Opens a webview with experiment tracker, dataset registry, artifact counts, reproducibility info |
+| `Cytos: Open Workflow Canvas` | Opens Cytos Studio for Home, Workflows, and Monitoring |
+| `Cytos: Open Workflow Dashboard` | Compatibility alias for the Cytos Studio home route |
 | `Cytos: Run Python Tests` | Runs `python3 -m pytest -q` in an integrated terminal |
 | `Cytos: Run Inspection Workflow` | Runs `python3 -m cytos_engine.cli run --workflow inspection` |
 
-The **Workflow Dashboard** reads `.cytos/metadata.db` in the open workspace folder. No sidecar server is needed — metadata is queried inline via a Python subprocess call from the extension.
+The **Workflow Canvas** reads `.cytos/metadata.db` in the open workspace folder, with read fallback for legacy `.axiom/metadata.db`. No sidecar server is needed; metadata is queried inline via a Python subprocess call from the extension.
 
 ---
 
@@ -162,9 +163,9 @@ npx tsc -p . --noEmit   # type-check only, no output
 npx tsc -p .             # full build
 ```
 
-### Dashboard shows "No runs yet"
+### Canvas shows "No runs yet"
 
-The dashboard reads `.cytos/metadata.db` in the workspace root. This file is created automatically when you run a workflow. Run `Cytos: Run Inspection Workflow` to generate your first run record.
+The canvas reads `.cytos/metadata.db` in the workspace root. This file is created automatically when you run a workflow. Run `Cytos: Run Inspection Workflow` to generate your first run record. Legacy `.axiom/` state is copied into `.cytos/` automatically on workflow execution.
 
 ### Python not found
 

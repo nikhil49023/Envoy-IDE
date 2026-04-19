@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from axiom_engine.inspection.model_inspector import inspect_models, render_markdown_report
-from axiom_engine.schemas.events import RuntimeEvent, now_iso
+from cytos_engine.inspection.model_inspector import inspect_models, render_markdown_report
+from cytos_engine.schemas.events import RuntimeEvent, now_iso
 
 
 def run_inspection_workflow(project_root: Path, run_id: str, config: dict):
@@ -69,7 +69,7 @@ def run_inspection_workflow(project_root: Path, run_id: str, config: dict):
             timestamp=now_iso(),
         )
 
-    artifacts_dir = project_root / ".axiom" / "artifacts"
+    artifacts_dir = project_root / ".cytos" / "artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     json_report = artifacts_dir / f"inspection-{run_id}.json"

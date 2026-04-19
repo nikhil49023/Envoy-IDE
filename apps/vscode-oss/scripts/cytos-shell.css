@@ -1,78 +1,138 @@
 /*
-  Envoy Deep Glassmorphic Shell Override
-  This CSS is aggressively injected into the core VS Code workbench
-  to break the traditional "code editor" layout and make it a unified Canvas.
+  Cytos Deep Glassmorphic Shell Override
+  Applied to the VS Code OSS workbench so Cytos reads as an MLOps operating
+  surface first, with editor mechanics tucked behind the product shell.
 */
 
-/* 1. Global Shell Translucency */
-.monaco-workbench {
-  background: radial-gradient(circle at top left, #120e24, #050510) !important;
-  color: #fafafa !important;
+:root {
+  --cytos-onyx: #050806;
+  --cytos-carbon: #0b1110;
+  --cytos-panel: rgba(255, 255, 255, 0.055);
+  --cytos-panel-strong: rgba(255, 255, 255, 0.095);
+  --cytos-line: rgba(230, 255, 246, 0.14);
+  --cytos-line-strong: rgba(230, 255, 246, 0.25);
+  --cytos-text: #f3fff9;
+  --cytos-muted: #91a39a;
+  --cytos-emerald: #35e6af;
+  --cytos-gold: #d6b25e;
+  --cytos-rose: #e9788f;
 }
 
-/* Base grid modifications to let through backgrounds */
+.monaco-workbench {
+  background:
+    linear-gradient(145deg, #050806 0%, #0d1512 42%, #12140d 100%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 118px) !important;
+  color: var(--cytos-text) !important;
+}
+
 .monaco-workbench .part {
   background-color: transparent !important;
 }
 
+.monaco-workbench .part.activitybar {
+  width: 74px !important;
+  background: rgba(5, 8, 6, 0.68) !important;
+  border-right: 1px solid var(--cytos-line) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+}
+
+.monaco-workbench .activitybar > .content .monaco-action-bar .action-item.checked {
+  background: var(--cytos-panel-strong) !important;
+  box-shadow: inset 3px 0 0 var(--cytos-gold) !important;
+}
+
 .monaco-workbench .part.sidebar,
+.monaco-workbench .part.auxiliarybar,
 .monaco-workbench .part.panel,
 .monaco-workbench .part.editor {
-  background: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  border-radius: 16px !important;
-  margin: 12px !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
+  background: var(--cytos-panel) !important;
+  border: 1px solid var(--cytos-line) !important;
+  border-radius: 8px !important;
+  margin: 10px !important;
+  backdrop-filter: blur(30px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.18) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34) !important;
   overflow: hidden !important;
 }
 
-/* 2. Floating Title Bar */
+.monaco-workbench .part.editor {
+  margin-left: 0 !important;
+}
+
+.monaco-workbench .part.sidebar > .title,
+.monaco-workbench .part.panel > .title,
+.monaco-workbench .part.auxiliarybar > .title {
+  background: rgba(5, 8, 6, 0.38) !important;
+  border-bottom: 1px solid var(--cytos-line) !important;
+  color: var(--cytos-text) !important;
+}
+
 .monaco-workbench .part.titlebar {
-  background: rgba(0, 0, 0, 0.2) !important;
-  backdrop-filter: blur(12px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(5, 8, 6, 0.76) !important;
+  border-bottom: 1px solid var(--cytos-line) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
 }
 
-/* 3. Disable distracting rigid borders between views */
-.monaco-sash {
-  background: transparent !important;
-}
-.monaco-sash:hover {
-  background: rgba(99, 102, 241, 0.5) !important;
-  transition: background 0.2s ease;
-}
-.monaco-workbench .part > .content {
-    border: none !important;
+.monaco-workbench .part.statusbar {
+  background: rgba(5, 8, 6, 0.74) !important;
+  border-top: 1px solid var(--cytos-line) !important;
+  color: var(--cytos-muted) !important;
 }
 
-/* 4. Glassmorphic editor tabs (if shown) */
+.monaco-workbench .monaco-list-row.focused,
+.monaco-workbench .monaco-list-row.selected,
+.monaco-workbench .monaco-list-row:hover {
+  background: rgba(53, 230, 175, 0.08) !important;
+  color: var(--cytos-text) !important;
+}
+
 .monaco-workbench .part.editor > .content .editor-group-container > .title {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  background: rgba(5, 8, 6, 0.34) !important;
+  border-bottom: 1px solid var(--cytos-line) !important;
 }
 
 .monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: none !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
   border-radius: 8px 8px 0 0 !important;
   margin: 4px 4px 0 4px !important;
 }
+
 .monaco-workbench .part.editor > .content .editor-group-container > .title .tabs-container > .tab.active {
-  background: rgba(99, 102, 241, 0.15) !important;
-  border-bottom: 2px solid #6366f1 !important;
+  background: var(--cytos-panel-strong) !important;
+  border-color: var(--cytos-line) !important;
+  box-shadow: inset 0 -2px 0 var(--cytos-gold) !important;
 }
 
-/* 5. Terminal & Output panels */
-.monaco-workbench .part.panel > .content {
-  background: rgba(0, 0, 0, 0.2) !important;
+.monaco-workbench .monaco-sash {
+  background: transparent !important;
 }
 
-/* 6. Typography Overrides */
+.monaco-workbench .monaco-sash:hover {
+  background: rgba(214, 178, 94, 0.38) !important;
+}
+
+.monaco-workbench .part > .content,
+.monaco-workbench .split-view-view {
+  border: none !important;
+}
+
+.monaco-workbench .part.panel > .content,
+.monaco-workbench .terminal-wrapper,
+.monaco-workbench .xterm {
+  background: rgba(5, 8, 6, 0.36) !important;
+}
+
+.monaco-workbench .codicon,
+.monaco-workbench .action-label {
+  color: inherit;
+}
+
 .monaco-workbench,
 .monaco-workbench .mac,
 .monaco-workbench .windows,
 .monaco-workbench .linux {
-  font-family: "Inter", "system-ui", "-apple-system", sans-serif !important;
+  font-family: Inter, "system-ui", "-apple-system", sans-serif !important;
 }

@@ -5,11 +5,11 @@ import json
 import sys
 from pathlib import Path
 
-from axiom_engine.engine import run_workflow
+from cytos_engine.engine import run_workflow
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="axiom-engine")
+    parser = argparse.ArgumentParser(prog="cytos-engine")
     sub = parser.add_subparsers(dest="command", required=True)
 
     run_cmd = sub.add_parser("run", help="Run a workflow")

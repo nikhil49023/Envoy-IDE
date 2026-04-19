@@ -37,7 +37,8 @@ The integration layer. Does not modify upstream VS Code source directly. Instead
 
 The first-party Cytos extension contributes:
 
-- **`cytos.openWorkflowDashboard`**: webview panel showing experiment tracker, dataset registry, artifact counts, and reproducibility info (backed by `cytos_engine` metadata via inline Python subprocess)
+- **`cytos.openWorkflowCanvas`**: Cytos Studio webview for Home, Workflows, and Monitoring routes (backed by `cytos_engine` metadata via inline Python subprocess)
+- **`cytos.openWorkflowDashboard`**: compatibility alias for the Cytos Studio home route
 - **`cytos.runPytest`**: runs `python3 -m pytest -q` in an integrated terminal
 - **`cytos.runInspectionWorkflow`**: runs `python3 -m cytos_engine.cli run --workflow inspection`
 
@@ -72,10 +73,10 @@ Each workspace folder that Cytos opens stores local ML run state in `.cytos/`:
 ├── exports/        # Export outputs
 ├── cache/          # Intermediate caches
 ├── assistant/      # Assistant context
-└── metadata.db     # SQLite run log (queried by the dashboard)
+└── metadata.db     # SQLite run log (queried by Cytos Studio)
 ```
 
-This directory is excluded from git per `.gitignore`.
+This directory is excluded from git per `.gitignore`. Legacy `.axiom/` project state is auto-migrated to `.cytos/` by `cytos_engine` and remains readable during the migration window.
 
 ## Extension Gallery
 

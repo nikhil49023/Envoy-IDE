@@ -60,7 +60,7 @@ IGNORED_SCAN_DIRS = {
 }
 
 ALLOWED_HIDDEN_DIRS = {
-    ".axiom",
+    ".cytos",
 }
 
 ONNX_DTYPE_BYTES = {

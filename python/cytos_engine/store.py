@@ -1,26 +1,34 @@
 from __future__ import annotations
 
+import shutil
 import sqlite3
 from pathlib import Path
 
 
-AXIOM_DIR = ".axiom"
+CYTOS_DIR = ".cytos"
+LEGACY_AXIOM_DIR = ".axiom"
+PROJECT_SUBDIRS = ("runs", "artifacts", "datasets", "exports", "cache", "assistant")
 
 
 def ensure_project_layout(project_root: Path) -> Path:
-    axiom = project_root / AXIOM_DIR
-    (axiom / "runs").mkdir(parents=True, exist_ok=True)
-    (axiom / "artifacts").mkdir(parents=True, exist_ok=True)
-    (axiom / "datasets").mkdir(parents=True, exist_ok=True)
-    (axiom / "exports").mkdir(parents=True, exist_ok=True)
-    (axiom / "cache").mkdir(parents=True, exist_ok=True)
-    (axiom / "assistant").mkdir(parents=True, exist_ok=True)
-    return axiom
+    cytos = project_root / CYTOS_DIR
+    legacy = project_root / LEGACY_AXIOM_DIR
+
+    if not cytos.exists() and legacy.exists():
+        shutil.copytree(legacy, cytos)
+
+    for subdir in PROJECT_SUBDIRS:
+        (cytos / subdir).mkdir(parents=True, exist_ok=True)
+    return cytos
+
+
+def project_state_dir(project_root: Path) -> Path:
+    return ensure_project_layout(project_root)
 
 
 def open_db(project_root: Path) -> sqlite3.Connection:
-    axiom = ensure_project_layout(project_root)
-    db_path = axiom / "metadata.db"
+    cytos = ensure_project_layout(project_root)
+    db_path = cytos / "metadata.db"
     conn = sqlite3.connect(db_path)
     conn.execute(
         """

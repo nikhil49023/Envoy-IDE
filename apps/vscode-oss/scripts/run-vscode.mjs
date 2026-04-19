@@ -7,11 +7,12 @@ const extensionDevPath = resolve(root, "extensions", "cytos-ml");
 const userDataDir = resolve(root, ".build", "user-data");
 const extensionsDir = resolve(root, ".build", "extensions");
 
-function run(command, args, cwd = root) {
+function run(command, args, cwd = root, env = process.env) {
   const result = spawnSync(command, args, {
     cwd,
     stdio: "inherit",
     shell: false,
+    env,
   });
 
   if (result.status !== 0) {
@@ -21,6 +22,14 @@ function run(command, args, cwd = root) {
 
 run("node", ["./scripts/sync-cytos-layer.mjs"], root);
 run("npm", ["run", "compile"], upstreamRoot);
+
+const launchEnv = { ...process.env };
+for (const key of Object.keys(launchEnv)) {
+  if (key === "ELECTRON_RUN_AS_NODE" || key.startsWith("VSCODE_")) {
+    delete launchEnv[key];
+  }
+}
+
 run(
   "bash",
   [
@@ -31,4 +40,5 @@ run(
     "--no-sandbox"
   ],
   upstreamRoot,
+  launchEnv,
 );

@@ -1,1 +1,1 @@
-"""Axiom workflow engine package."""
+"""Cytos workflow engine package."""

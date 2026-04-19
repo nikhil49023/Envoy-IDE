@@ -1,12 +1,12 @@
-# Envoy VS Code OSS Rebuild
+# Cytos VS Code OSS Rebuild
 
-This workspace rebuilds Envoy IDE on top of VS Code OSS instead of the custom Electron shell.
+This workspace rebuilds Cytos IDE on top of VS Code OSS instead of the custom Electron shell.
 
 ## What this layer does
 
 - Clones upstream VS Code OSS into `.upstream/vscode`
-- Applies Envoy product branding overrides
-- Builds and loads the bundled Envoy extension
+- Applies Cytos product branding overrides
+- Builds and loads the bundled Cytos extension
 - Runs VS Code OSS with isolated user-data and extension directories
 
 ## Commands

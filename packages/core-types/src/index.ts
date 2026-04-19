@@ -1,8 +1,8 @@
 /**
- * Envoy IDE — shared domain types.
+ * Cytos IDE shared domain types.
  *
- * Used by the envoy-ml VS Code extension and any future Envoy tooling
- * that needs shared Envoy domain type definitions.
+ * Used by the cytos-ml VS Code extension and any future Cytos tooling
+ * that needs shared Cytos domain type definitions.
  */
 
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ export type WorkflowType =
   | "inspection";
 
 // ---------------------------------------------------------------------------
-// Runtime events (emitted by axiom_engine, consumed by extension/dashboard)
+// Runtime events (emitted by cytos_engine, consumed by extension/dashboard)
 // ---------------------------------------------------------------------------
 
 export type RuntimeEventKind =
@@ -47,7 +47,7 @@ export type RuntimeEvent = {
 };
 
 // ---------------------------------------------------------------------------
-// ML run metadata (fetched from .axiom/metadata.db via Python subprocess)
+// ML run metadata (fetched from .cytos/metadata.db via Python subprocess)
 // ---------------------------------------------------------------------------
 
 export type RunStatus = "running" | "success" | "failed" | "cancelled";

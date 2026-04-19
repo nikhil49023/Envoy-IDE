@@ -21,9 +21,9 @@ out/
 apps/vscode-oss/.upstream/
 apps/vscode-oss/.build/
 
-# Envoy ML extension build artifacts
-apps/vscode-oss/extensions/envoy-ml/node_modules/
-apps/vscode-oss/extensions/envoy-ml/dist/
+# Cytos ML extension build artifacts
+apps/vscode-oss/extensions/cytos-ml/node_modules/
+apps/vscode-oss/extensions/cytos-ml/dist/
 
 # Python
 .python-version
@@ -39,6 +39,7 @@ __pycache__/
 .ruff_cache/
 
 # Local project runtime data (excluded per-project, not globally)
+.cytos/
 .axiom/
 
 # Secret / local env files

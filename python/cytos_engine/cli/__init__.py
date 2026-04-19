@@ -1,1 +1,1 @@
-"""CLI entrypoints for axiom_engine."""
+"""CLI entrypoints for cytos_engine."""

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from axiom_engine.schemas.events import RuntimeEvent, now_iso
+from cytos_engine.schemas.events import RuntimeEvent, now_iso
 
 
 def run_simulation_workflow(project_root: Path, run_id: str, config: dict):
@@ -12,6 +12,6 @@ def run_simulation_workflow(project_root: Path, run_id: str, config: dict):
     yield RuntimeEvent(event="metric", run_id=run_id, name="estimated_memory_mb", value=1870, timestamp=now_iso())
     yield RuntimeEvent(event="metric", run_id=run_id, name="estimated_latency_ms", value=63, timestamp=now_iso())
 
-    summary = project_root / ".axiom" / "artifacts" / f"simulation-{run_id}.json"
+    summary = project_root / ".cytos" / "artifacts" / f"simulation-{run_id}.json"
     summary.write_text('{"fit":"warning","headroom_mb":178}', encoding="utf-8")
     yield RuntimeEvent(event="artifact", run_id=run_id, type="simulation", path=str(summary), timestamp=now_iso())

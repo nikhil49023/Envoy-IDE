@@ -72,7 +72,8 @@ Produces a distributable Linux x64 build via the upstream VS Code gulp pipeline.
 
 | Command | Description |
 |---|---|
-| `Cytos: Open Workflow Dashboard` | Open the ML experiment/dataset dashboard |
+| `Cytos: Open Workflow Canvas` | Open Cytos Studio for Home, Workflows, and Monitoring |
+| `Cytos: Open Workflow Dashboard` | Compatibility alias for the Cytos Studio home route |
 | `Cytos: Run Python Tests` | Run `pytest` in an integrated terminal |
 | `Cytos: Run Inspection Workflow` | Run the model inspection workflow |
 

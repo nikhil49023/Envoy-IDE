@@ -30,7 +30,7 @@
         },
         {
           "id": "cytos-data",
-          "name": "Data",
+          "name": "Data (Ingest & Prep)",
           "icon": "$(database)"
         },
         {
@@ -40,7 +40,7 @@
         },
         {
           "id": "cytos-runs",
-          "name": "Runs",
+          "name": "Runs (Experiment & Train)",
           "icon": "$(play)"
         },
         {
@@ -55,7 +55,7 @@
         },
         {
           "id": "cytos-deployments",
-          "name": "Deployments",
+          "name": "Deployments (Deploy)",
           "icon": "$(cloud-upload)"
         },
         {
@@ -65,7 +65,7 @@
         },
         {
           "id": "cytos-alerts",
-          "name": "Alerts",
+          "name": "Alerts (Improve)",
           "icon": "$(bell)"
         }
       ]
@@ -77,12 +77,30 @@
         "icon": "$(paintcan)"
       },
       {
+        "command": "cytos.openWorkflowDashboard",
+        "title": "Cytos: Open Workflow Dashboard",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "cytos.openCanvasRoute",
+        "title": "Cytos: Open Studio Route"
+      },
+      {
         "command": "cytos.runPytest",
         "title": "Cytos: Run Python Tests"
       },
       {
+        "command": "cytos.openTerminal",
+        "title": "Cytos: Open Terminal"
+      },
+      {
         "command": "cytos.runInspectionWorkflow",
         "title": "Cytos: Run Inspection Workflow"
+      },
+      {
+        "command": "cytos.createDatasetFromPdf",
+        "title": "Cytos: Create Dataset from PDF",
+        "icon": "$(file-pdf)"
       }
     ],
     "menus": {
